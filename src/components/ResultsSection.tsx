@@ -50,7 +50,6 @@ const ResultsSection = ({ results }: ResultsSectionProps) => {
           <p className="text-foreground/70 max-w-lg mx-auto">
             {results.scoreReason}
           </p>
-          <div className="accent-divider mt-6 max-w-xs mx-auto" />
         </div>
 
         {/* 2. What's Holding You Back */}
@@ -173,12 +172,18 @@ const ResultsSection = ({ results }: ResultsSectionProps) => {
 
         {/* 6. Keyword & ICP Score */}
         <div className="animate-slide-up" style={{ animationDelay: "0.5s" }}>
-          <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center gap-3 mb-4">
             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
               <TrendingUp className="h-5 w-5 text-primary" />
             </div>
-            <h3 className="text-2xl font-bold">Keyword & ICP Relevance</h3>
+            <h3 className="text-2xl font-bold">Keyword and ICP Relevance</h3>
           </div>
+          
+          {/* Descriptive text */}
+          <p className="text-muted-foreground text-sm mb-6 max-w-3xl">
+            This analysis determines how well your profile aligns with the audience you want to attract and influences search visibility, message resonance, and inbound profile views.
+          </p>
+          
           <div className="card-elevated p-6 md:p-8">
             {/* Score bar */}
             <div className="mb-6">
@@ -215,7 +220,7 @@ const ResultsSection = ({ results }: ResultsSectionProps) => {
             {results.missingKeywords.length > 0 && (
               <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
                 <p className="text-foreground/80">
-                  <span className="font-semibold text-primary">Missing High-Signal Keywords:</span>{" "}
+                  <span className="font-semibold text-primary">Missing High Signal Keywords:</span>{" "}
                   <span className="font-medium">
                     {results.missingKeywords.join(", ")}
                   </span>

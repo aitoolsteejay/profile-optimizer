@@ -14,7 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profile_optimizations: {
+        Row: {
+          current_about: string
+          current_headline: string
+          custom_icp_if_any: string | null
+          detected_keywords: string[] | null
+          icp_relevance_score: number | null
+          id: string
+          missing_keywords: string[] | null
+          optimized_about: string | null
+          optimized_headlines: Json | null
+          positioning_angles: Json | null
+          profile_clarity_score: number | null
+          role: string | null
+          selected_tones: string[]
+          target_icp: string | null
+          timestamp: string
+        }
+        Insert: {
+          current_about: string
+          current_headline: string
+          custom_icp_if_any?: string | null
+          detected_keywords?: string[] | null
+          icp_relevance_score?: number | null
+          id?: string
+          missing_keywords?: string[] | null
+          optimized_about?: string | null
+          optimized_headlines?: Json | null
+          positioning_angles?: Json | null
+          profile_clarity_score?: number | null
+          role?: string | null
+          selected_tones: string[]
+          target_icp?: string | null
+          timestamp?: string
+        }
+        Update: {
+          current_about?: string
+          current_headline?: string
+          custom_icp_if_any?: string | null
+          detected_keywords?: string[] | null
+          icp_relevance_score?: number | null
+          id?: string
+          missing_keywords?: string[] | null
+          optimized_about?: string | null
+          optimized_headlines?: Json | null
+          positioning_angles?: Json | null
+          profile_clarity_score?: number | null
+          role?: string | null
+          selected_tones?: string[]
+          target_icp?: string | null
+          timestamp?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 
 const loadingMessages = [
-  "Analyzing your positioning…",
-  "Checking ICP alignment…",
-  "Evaluating keyword density…",
-  "Crafting optimized headlines…",
-  "Generating positioning angles…",
-  "Finalizing recommendations…",
+  "Analyzing your positioning",
+  "Checking ICP alignment",
+  "Evaluating keyword density",
+  "Crafting optimized headlines",
+  "Generating positioning angles",
+  "Finalizing recommendations",
 ];
 
 const LoadingState = () => {

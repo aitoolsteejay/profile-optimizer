@@ -3,12 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowRight, Sparkles } from "lucide-react";
 
+type ToneOption = "bold" | "professional" | "casual" | "analytical" | "direct" | "persuasive" | "minimal" | "confident";
+
 interface FormData {
   headline: string;
   aboutSection: string;
   role: string;
   targetIcp: string;
-  tone: "bold" | "professional" | "casual";
+  customIcp: string;
+  tones: ToneOption[];
 }
 
 interface InputSectionProps {
@@ -17,14 +20,24 @@ interface InputSectionProps {
 }
 
 const icpOptions = [
-  "Founders",
-  "CEOs",
   "CHROs",
   "Talent Leaders",
   "RevOps",
-  "VPs of Sales",
-  "Marketing Leaders",
-  "CTOs",
+  "Sales Leaders",
+  "Founders",
+  "Marketers",
+  "Other",
+];
+
+const toneOptions: ToneOption[] = [
+  "bold",
+  "professional",
+  "casual",
+  "analytical",
+  "direct",
+  "persuasive",
+  "minimal",
+  "confident",
 ];
 
 const InputSection = ({ onSubmit, isLoading }: InputSectionProps) => {
@@ -33,9 +46,25 @@ const InputSection = ({ onSubmit, isLoading }: InputSectionProps) => {
     aboutSection: "",
     role: "",
     targetIcp: "",
-    tone: "bold",
+    customIcp: "",
+    tones: ["bold"],
   });
   const [errors, setErrors] = useState<{ headline?: string; aboutSection?: string }>({});
+
+  const handleToneToggle = (tone: ToneOption) => {
+    setFormData(prev => {
+      const currentTones = prev.tones;
+      if (currentTones.includes(tone)) {
+        // Remove tone, but keep at least one
+        if (currentTones.length > 1) {
+          return { ...prev, tones: currentTones.filter(t => t !== tone) };
+        }
+        return prev;
+      } else {
+        return { ...prev, tones: [...currentTones, tone] };
+      }
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,7 +108,7 @@ const InputSection = ({ onSubmit, isLoading }: InputSectionProps) => {
               <Input
                 id="headline"
                 type="text"
-                placeholder="Founder @ X | Building Y"
+                placeholder="CEO @ Company | Helping teams achieve X"
                 value={formData.headline}
                 onChange={(e) => {
                   setFormData({ ...formData, headline: e.target.value });
@@ -102,7 +131,7 @@ const InputSection = ({ onSubmit, isLoading }: InputSectionProps) => {
               </label>
               <textarea
                 id="about"
-                placeholder="I'm a founder who loves building products…"
+                placeholder="I help companies achieve..."
                 value={formData.aboutSection}
                 onChange={(e) => {
                   setFormData({ ...formData, aboutSection: e.target.value });
@@ -131,7 +160,7 @@ const InputSection = ({ onSubmit, isLoading }: InputSectionProps) => {
               <Input
                 id="role"
                 type="text"
-                placeholder="Founder & CEO, SaaS"
+                placeholder="CEO, VP of Sales, Marketing Director"
                 value={formData.role}
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
               />
@@ -142,35 +171,46 @@ const InputSection = ({ onSubmit, isLoading }: InputSectionProps) => {
               <label htmlFor="target-icp" className="block text-sm font-medium text-foreground">
                 Target ICP
               </label>
-              <Input
+              <select
                 id="target-icp"
-                type="text"
-                placeholder="CHROs, Talent Leaders, RevOps"
                 value={formData.targetIcp}
-                onChange={(e) => setFormData({ ...formData, targetIcp: e.target.value })}
-                list="icp-suggestions"
-              />
-              <datalist id="icp-suggestions">
+                onChange={(e) => setFormData({ ...formData, targetIcp: e.target.value, customIcp: "" })}
+                className="flex w-full rounded-lg border bg-input px-4 py-3 text-base text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200 border-border focus:border-primary"
+              >
+                <option value="">Select your target audience</option>
                 {icpOptions.map((option) => (
-                  <option key={option} value={option} />
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
                 ))}
-              </datalist>
+              </select>
+              
+              {/* Custom ICP input when "Other" is selected */}
+              {formData.targetIcp === "Other" && (
+                <Input
+                  type="text"
+                  placeholder="Enter your target audience"
+                  value={formData.customIcp}
+                  onChange={(e) => setFormData({ ...formData, customIcp: e.target.value })}
+                  className="mt-3"
+                />
+              )}
             </div>
             
-            {/* Tone Selector */}
+            {/* Tone Selector - Multi-select */}
             <div className="space-y-3">
               <label className="block text-sm font-medium text-foreground">
-                Tone Preference
+                Tone Preference <span className="text-muted-foreground text-xs">(select one or more)</span>
               </label>
-              <div className="flex flex-wrap gap-3">
-                {(["bold", "professional", "casual"] as const).map((tone) => (
+              <div className="flex flex-wrap gap-2">
+                {toneOptions.map((tone) => (
                   <Button
                     key={tone}
                     type="button"
                     variant="tone"
-                    data-active={formData.tone === tone}
-                    onClick={() => setFormData({ ...formData, tone })}
-                    className="capitalize px-6"
+                    data-active={formData.tones.includes(tone)}
+                    onClick={() => handleToneToggle(tone)}
+                    className="capitalize px-4 py-2"
                   >
                     {tone}
                   </Button>

@@ -5,9 +5,6 @@ const CTASection = () => {
   return (
     <section className="py-24 px-6">
       <div className="max-w-3xl mx-auto text-center">
-        {/* Accent line */}
-        <div className="h-1 w-24 bg-primary mx-auto mb-12 rounded-full" />
-        
         {/* Headline */}
         <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 leading-tight">
           Imagine this applied across your{" "}
@@ -16,7 +13,7 @@ const CTASection = () => {
         
         {/* Subtext */}
         <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-          We don't just rewrite profiles — we help founders turn LinkedIn into a predictable inbound pipeline.
+          We don't just rewrite profiles. We help professionals turn LinkedIn into a predictable inbound pipeline.
         </p>
         
         {/* Primary CTA */}
@@ -24,7 +21,7 @@ const CTASection = () => {
           variant="hero" 
           size="xl"
           className="mb-6"
-          onClick={() => window.open("https://calendly.com", "_blank")}
+          onClick={() => window.open("https://calendly.com/founder-myntmore/30min?month=2025-12", "_blank")}
         >
           Book a Strategy Call
           <ArrowRight className="ml-2 h-5 w-5" />
@@ -34,9 +31,9 @@ const CTASection = () => {
         <div>
           <button 
             className="inline-flex items-center text-muted-foreground hover:text-primary transition-colors text-sm font-medium group"
-            onClick={() => window.open("#", "_blank")}
+            onClick={() => window.open("https://calendly.com/founder-myntmore/30min?month=2025-12", "_blank")}
           >
-            See how founder-led pipeline works
+            See how professional inbound pipeline works
             <ExternalLink className="ml-2 h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
           </button>
         </div>

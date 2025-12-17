@@ -12,6 +12,11 @@ const HeroSection = ({ onCtaClick }: HeroSectionProps) => {
       <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
       
       <div className="max-w-4xl mx-auto relative z-10 animate-fade-in">
+        {/* Brand */}
+        <p className="text-primary font-semibold text-sm tracking-widest uppercase mb-6">
+          Myntmore LinkedIn Profile Optimizer
+        </p>
+        
         {/* Main headline */}
         <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight mb-6 leading-[1.1]">
           Your LinkedIn profile is{" "}
@@ -25,7 +30,7 @@ const HeroSection = ({ onCtaClick }: HeroSectionProps) => {
         
         {/* Supporting muted line */}
         <p className="text-muted-foreground text-lg mb-10">
-          Free profile clarity audit for founders.
+          Free profile clarity audit for professionals.
         </p>
         
         {/* CTA Button */}

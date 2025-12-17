@@ -7,12 +7,15 @@ import CTASection from "@/components/CTASection";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+type ToneOption = "bold" | "professional" | "casual" | "analytical" | "direct" | "persuasive" | "minimal" | "confident";
+
 interface FormData {
   headline: string;
   aboutSection: string;
   role: string;
   targetIcp: string;
-  tone: "bold" | "professional" | "casual";
+  customIcp: string;
+  tones: ToneOption[];
 }
 
 // Rule-based Profile Clarity Score calculation
@@ -59,7 +62,7 @@ const calculateClarityScore = (headline: string, aboutSection: string, targetIcp
   }
 
   // No authority or credibility marker → -10
-  const credibilityIndicators = ["founder", "ceo", "cto", "vp", "director", "head of", "ex-", "former", "led", "built", "scaled", "years", "clients", "companies", "trusted"];
+  const credibilityIndicators = ["ceo", "cto", "vp", "director", "head of", "ex-", "former", "led", "built", "scaled", "years", "clients", "companies", "trusted", "advisor", "consultant", "expert"];
   const hasCredibility = credibilityIndicators.some(word => combined.includes(word));
   if (!hasCredibility) {
     score -= 10;
@@ -67,7 +70,7 @@ const calculateClarityScore = (headline: string, aboutSection: string, targetIcp
   }
 
   // Role unclear → -10
-  if (headline.length < 15 || !headline.includes("|") && !headline.includes("—") && !headline.includes("-") && !headline.includes("@")) {
+  if (headline.length < 15 || !headline.includes("|") && !headline.includes("@")) {
     score -= 10;
     holdingBack.push("Role and positioning are unclear from the headline");
   }
@@ -81,7 +84,7 @@ const calculateClarityScore = (headline: string, aboutSection: string, targetIcp
 
   if (score >= 75) {
     verdict = "Strong positioning foundation.";
-    reason = "Your profile has clear elements of authority, ICP focus, and value proposition. Fine-tune the suggestions below to maximize impact.";
+    reason = "Your profile has clear elements of authority, ICP focus, and value proposition. Fine tune the suggestions below to maximize impact.";
   } else if (score >= 55) {
     verdict = "Room for significant improvement.";
     reason = "Your profile has potential but lacks critical positioning elements. The optimizations below will dramatically increase your authority and relevance.";
@@ -124,9 +127,8 @@ const calculateKeywordScore = (detectedKeywords: string[], targetIcp: string): {
     chros: ["talent", "hiring", "recruiting", "culture", "hr", "workforce", "retention"],
     "talent leaders": ["recruiting", "hiring", "talent", "acquisition", "pipeline", "candidates"],
     revops: ["revenue", "operations", "pipeline", "sales", "crm", "automation", "efficiency"],
-    "vps of sales": ["sales", "revenue", "quota", "pipeline", "deals", "closing", "team"],
-    "marketing leaders": ["marketing", "brand", "demand", "leads", "campaigns", "growth"],
-    ctos: ["technology", "engineering", "architecture", "scaling", "infrastructure", "product"],
+    "sales leaders": ["sales", "revenue", "quota", "pipeline", "deals", "closing", "team"],
+    marketers: ["marketing", "brand", "demand", "leads", "campaigns", "growth", "content"],
   };
 
   const icpLower = targetIcp.toLowerCase();
@@ -153,6 +155,43 @@ const calculateKeywordScore = (detectedKeywords: string[], targetIcp: string): {
   return { score: Math.max(20, score), missingKeywords };
 };
 
+// Log data to Supabase (silent, no user feedback)
+const logOptimization = async (
+  formData: FormData,
+  results: {
+    score: number;
+    keywordScore: number;
+    detectedKeywords: string[];
+    missingKeywords: string[];
+    headlines: Array<{ angle: string; text: string }>;
+    aboutSection: string;
+    positioningAngles: Array<{ title: string; description: string }>;
+  }
+) => {
+  try {
+    const effectiveIcp = formData.targetIcp === "Other" ? formData.customIcp : formData.targetIcp;
+    
+    await supabase.from('profile_optimizations').insert({
+      current_headline: formData.headline,
+      current_about: formData.aboutSection,
+      role: formData.role || null,
+      target_icp: effectiveIcp || null,
+      custom_icp_if_any: formData.targetIcp === "Other" ? formData.customIcp : null,
+      selected_tones: formData.tones,
+      profile_clarity_score: results.score,
+      icp_relevance_score: results.keywordScore,
+      detected_keywords: results.detectedKeywords,
+      missing_keywords: results.missingKeywords,
+      optimized_headlines: results.headlines,
+      optimized_about: results.aboutSection,
+      positioning_angles: results.positioningAngles,
+    });
+  } catch (error) {
+    // Silent fail - don't interrupt user experience
+    console.error('Failed to log optimization:', error);
+  }
+};
+
 const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
@@ -168,24 +207,26 @@ const Index = () => {
     setShowResults(false);
     
     try {
+      const effectiveIcp = formData.targetIcp === "Other" ? formData.customIcp : formData.targetIcp;
+      
       // Calculate rule-based scores
       const { score, verdict, reason, holdingBack } = calculateClarityScore(
         formData.headline, 
         formData.aboutSection, 
-        formData.targetIcp
+        effectiveIcp
       );
       
       const detectedKeywords = extractKeywords(`${formData.headline} ${formData.aboutSection}`);
-      const { score: keywordScore, missingKeywords } = calculateKeywordScore(detectedKeywords, formData.targetIcp);
+      const { score: keywordScore, missingKeywords } = calculateKeywordScore(detectedKeywords, effectiveIcp);
 
       // Call AI for content generation
       const { data, error } = await supabase.functions.invoke('optimize-profile', {
         body: {
           headline: formData.headline,
           aboutSection: formData.aboutSection,
-          role: formData.role || "Founder",
-          targetIcp: formData.targetIcp || "Founders",
-          tone: formData.tone,
+          role: formData.role || "Professional",
+          targetIcp: effectiveIcp || "Professionals",
+          tones: formData.tones,
         }
       });
 
@@ -205,13 +246,13 @@ const Index = () => {
         holdingBack,
         headlines: [
           { angle: "Authority Angle", text: data.headlines?.authority || "Unable to generate headline" },
-          { angle: "Problem-Solver Angle", text: data.headlines?.problemSolver || "Unable to generate headline" },
+          { angle: "Problem Solver Angle", text: data.headlines?.problemSolver || "Unable to generate headline" },
           { angle: "Social Proof Angle", text: data.headlines?.socialProof || "Unable to generate headline" },
         ],
         aboutSection: data.aboutSection || "Unable to generate about section",
         positioningAngles: [
           { title: "Authority", description: data.positioningAngles?.authority || "Position yourself as an expert" },
-          { title: "Problem-Solver", description: data.positioningAngles?.problemSolver || "Focus on solutions you provide" },
+          { title: "Problem Solver", description: data.positioningAngles?.problemSolver || "Focus on solutions you provide" },
           { title: "Social Proof", description: data.positioningAngles?.socialProof || "Leverage your track record" },
         ],
         keywordScore,
@@ -221,6 +262,9 @@ const Index = () => {
       
       setResults(finalResults);
       setShowResults(true);
+      
+      // Log to Supabase (silent background operation)
+      logOptimization(formData, finalResults);
       
       // Scroll to results
       setTimeout(() => {
@@ -259,7 +303,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="py-8 px-6 border-t border-border">
         <div className="max-w-4xl mx-auto text-center text-muted-foreground text-sm">
-          <p>© {new Date().getFullYear()} Profile Optimizer. Built for founders who want more inbound.</p>
+          <p>© {new Date().getFullYear()} Myntmore LinkedIn Profile Optimizer. Built for professionals who want more inbound.</p>
         </div>
       </footer>
     </main>
