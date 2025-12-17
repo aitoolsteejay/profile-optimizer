@@ -5,20 +5,128 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Valid tones for validation
+const VALID_TONES = ['bold', 'professional', 'casual', 'analytical', 'direct', 'persuasive', 'minimal', 'confident'];
+
+// Input limits based on LinkedIn restrictions
+const LIMITS = {
+  headline: 220,
+  aboutSection: 2600,
+  role: 200,
+  targetIcp: 200,
+  maxTones: 8,
+};
+
+// Rate limiting: requests per IP per hour
+const RATE_LIMIT = 10;
+const RATE_LIMIT_WINDOW_MS = 3600000; // 1 hour
+
+async function checkRateLimit(ip: string): Promise<{ allowed: boolean; remaining: number }> {
+  try {
+    const kv = await Deno.openKv();
+    const key = ['rate_limit', 'optimize_profile', ip];
+    const result = await kv.get<number>(key);
+    const currentCount = result.value || 0;
+    
+    if (currentCount >= RATE_LIMIT) {
+      return { allowed: false, remaining: 0 };
+    }
+    
+    await kv.set(key, currentCount + 1, { expireIn: RATE_LIMIT_WINDOW_MS });
+    return { allowed: true, remaining: RATE_LIMIT - currentCount - 1 };
+  } catch (error) {
+    console.error('Rate limit check failed, allowing request:', error);
+    return { allowed: true, remaining: RATE_LIMIT };
+  }
+}
+
+function validateInputs(data: Record<string, unknown>): { valid: boolean; error?: string } {
+  const { headline, aboutSection, role, targetIcp, tones } = data;
+  
+  // Check required fields
+  if (!headline || typeof headline !== 'string' || headline.trim().length === 0) {
+    return { valid: false, error: 'Headline is required' };
+  }
+  if (!aboutSection || typeof aboutSection !== 'string' || aboutSection.trim().length === 0) {
+    return { valid: false, error: 'About section is required' };
+  }
+  
+  // Check length limits
+  if (headline.length > LIMITS.headline) {
+    return { valid: false, error: `Headline must be ${LIMITS.headline} characters or less` };
+  }
+  if (aboutSection.length > LIMITS.aboutSection) {
+    return { valid: false, error: `About section must be ${LIMITS.aboutSection} characters or less` };
+  }
+  if (role && typeof role === 'string' && role.length > LIMITS.role) {
+    return { valid: false, error: `Role must be ${LIMITS.role} characters or less` };
+  }
+  if (targetIcp && typeof targetIcp === 'string' && targetIcp.length > LIMITS.targetIcp) {
+    return { valid: false, error: `Target ICP must be ${LIMITS.targetIcp} characters or less` };
+  }
+  
+  // Validate tones
+  if (tones) {
+    const tonesArray = Array.isArray(tones) ? tones : [tones];
+    if (tonesArray.length > LIMITS.maxTones) {
+      return { valid: false, error: `Maximum ${LIMITS.maxTones} tones allowed` };
+    }
+    for (const tone of tonesArray) {
+      if (typeof tone !== 'string' || !VALID_TONES.includes(tone.toLowerCase())) {
+        return { valid: false, error: `Invalid tone: ${tone}. Valid options: ${VALID_TONES.join(', ')}` };
+      }
+    }
+  }
+  
+  return { valid: true };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { headline, aboutSection, role, targetIcp, tones } = await req.json();
+    // Get client IP for rate limiting
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+               req.headers.get('x-real-ip') || 
+               'unknown';
+    
+    // Check rate limit
+    const { allowed, remaining } = await checkRateLimit(ip);
+    if (!allowed) {
+      console.log(`Rate limit exceeded for IP: ${ip}`);
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }), {
+        status: 429,
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'X-RateLimit-Remaining': '0',
+          'Retry-After': '3600',
+        },
+      });
+    }
+
+    const body = await req.json();
+    
+    // Validate inputs
+    const validation = validateInputs(body);
+    if (!validation.valid) {
+      console.log('Input validation failed:', validation.error);
+      return new Response(JSON.stringify({ error: validation.error }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { headline, aboutSection, role, targetIcp, tones } = body;
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    console.log('Processing profile optimization request:', { role, targetIcp, tones });
+    console.log('Processing profile optimization request:', { role, targetIcp, tones, ip: ip.substring(0, 10) + '...' });
 
     const toneGuidance: Record<string, string> = {
       bold: "Use strong verbs, direct language, and confident assertions. Be punchy and assertive.",
@@ -71,13 +179,13 @@ Respond in valid JSON format with this exact structure:
 
     const userPrompt = `Analyze and optimize this LinkedIn profile:
 
-CURRENT HEADLINE: ${headline}
+CURRENT HEADLINE: ${headline.trim()}
 
 CURRENT ABOUT SECTION:
-${aboutSection}
+${aboutSection.trim()}
 
-ROLE: ${role}
-TARGET ICP: ${targetIcp}
+ROLE: ${(role || '').trim()}
+TARGET ICP: ${(targetIcp || '').trim()}
 
 Generate optimized headlines (3 variants), an optimized about section, and positioning angles. Apply the following tones: ${selectedTones.join(', ')}.`;
 
@@ -140,7 +248,11 @@ Generate optimized headlines (3 variants), an optimized about section, and posit
     console.log('Successfully parsed AI response');
 
     return new Response(JSON.stringify(parsed), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'application/json',
+        'X-RateLimit-Remaining': String(remaining),
+      },
     });
 
   } catch (error) {
