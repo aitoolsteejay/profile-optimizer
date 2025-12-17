@@ -1,0 +1,4 @@
+project_id = "dbaxhgedupktogldzzpk"
+
+[functions.optimize-profile]
+verify_jwt = false

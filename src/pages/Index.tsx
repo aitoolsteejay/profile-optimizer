@@ -4,51 +4,153 @@ import InputSection from "@/components/InputSection";
 import LoadingState from "@/components/LoadingState";
 import ResultsSection from "@/components/ResultsSection";
 import CTASection from "@/components/CTASection";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-// Mock results generator (simulates AI analysis)
-const generateMockResults = (formData: any) => {
-  const role = formData.role || "Founder & CEO, SaaS for recruiting teams";
-  const icp = formData.targetIcp === "Other" ? formData.customIcp : formData.targetIcp;
+interface FormData {
+  headline: string;
+  aboutSection: string;
+  role: string;
+  targetIcp: string;
+  tone: "bold" | "professional" | "casual";
+}
+
+// Rule-based Profile Clarity Score calculation
+const calculateClarityScore = (headline: string, aboutSection: string, targetIcp: string): { 
+  score: number; 
+  verdict: string; 
+  reason: string; 
+  holdingBack: string[] 
+} => {
+  let score = 100;
+  const holdingBack: string[] = [];
+  const combined = `${headline} ${aboutSection}`.toLowerCase();
+  const icpLower = targetIcp.toLowerCase();
+
+  // ICP not mentioned → -25
+  if (targetIcp && !combined.includes(icpLower) && !combined.includes(icpLower.replace(/s$/, ''))) {
+    score -= 25;
+    holdingBack.push("Your target ICP is not clearly mentioned in your profile");
+  }
+
+  // No clear problem stated → -20
+  const problemIndicators = ["help", "solve", "fix", "reduce", "eliminate", "improve", "transform", "accelerate", "streamline", "automate", "simplify"];
+  const hasProblem = problemIndicators.some(word => combined.includes(word));
+  if (!hasProblem) {
+    score -= 20;
+    holdingBack.push("No clear problem statement that shows what you solve");
+  }
+
+  // No outcome or metric → -20
+  const outcomeIndicators = ["%", "x", "million", "billion", "thousand", "revenue", "growth", "increase", "decrease", "roi", "saved", "generated", "closed", "pipeline"];
+  const numberPattern = /\d+/;
+  const hasOutcome = outcomeIndicators.some(word => combined.includes(word)) || numberPattern.test(combined);
+  if (!hasOutcome) {
+    score -= 20;
+    holdingBack.push("Missing concrete outcomes or metrics that demonstrate value");
+  }
+
+  // Vague language → -15
+  const vagueWords = ["passionate", "building", "love", "excited", "helping", "making the world", "journey", "mission-driven"];
+  const hasVague = vagueWords.some(word => combined.includes(word));
+  if (hasVague) {
+    score -= 15;
+    holdingBack.push("Contains vague or generic language that doesn't differentiate you");
+  }
+
+  // No authority or credibility marker → -10
+  const credibilityIndicators = ["founder", "ceo", "cto", "vp", "director", "head of", "ex-", "former", "led", "built", "scaled", "years", "clients", "companies", "trusted"];
+  const hasCredibility = credibilityIndicators.some(word => combined.includes(word));
+  if (!hasCredibility) {
+    score -= 10;
+    holdingBack.push("No clear authority or credibility markers");
+  }
+
+  // Role unclear → -10
+  if (headline.length < 15 || !headline.includes("|") && !headline.includes("—") && !headline.includes("-") && !headline.includes("@")) {
+    score -= 10;
+    holdingBack.push("Role and positioning are unclear from the headline");
+  }
+
+  // Clamp score between 25 and 90
+  score = Math.max(25, Math.min(90, score));
+
+  // Generate verdict based on score
+  let verdict: string;
+  let reason: string;
+
+  if (score >= 75) {
+    verdict = "Strong positioning foundation.";
+    reason = "Your profile has clear elements of authority, ICP focus, and value proposition. Fine-tune the suggestions below to maximize impact.";
+  } else if (score >= 55) {
+    verdict = "Room for significant improvement.";
+    reason = "Your profile has potential but lacks critical positioning elements. The optimizations below will dramatically increase your authority and relevance.";
+  } else {
+    verdict = "Your positioning needs work.";
+    reason = "Your profile doesn't clearly communicate what problem you solve or who you help. The rewrites below will transform how prospects perceive you.";
+  }
+
+  return { score, verdict, reason, holdingBack };
+};
+
+// Extract keywords from content
+const extractKeywords = (content: string): string[] => {
+  const words = content.toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(word => word.length > 3);
   
-  return {
-    score: 42,
-    headlines: [
-      {
-        angle: "Authority Angle",
-        text: `Founder @ HireFlow — Helping ${icp}s cut hiring time by 40% with workflow automation`,
-      },
-      {
-        angle: "Problem-Solver Angle",
-        text: `Fixing slow recruiting operations for ${icp}s → Automated pipelines that speed up hiring`,
-      },
-      {
-        angle: "Social Proof Angle",
-        text: `Trusted by 120+ ${icp}s | Building the fastest recruiting ops platform`,
-      },
-    ],
-    aboutSection: `I'm the founder of HireFlow, a recruiting ops automation platform used by 120+ ${icp}s to accelerate hiring without adding headcount.
+  const stopWords = new Set(['that', 'this', 'with', 'have', 'from', 'they', 'been', 'were', 'being', 'their', 'which', 'about', 'would', 'there', 'could', 'other', 'into', 'more', 'some', 'such', 'only', 'than', 'then', 'them']);
+  const meaningfulWords = words.filter(word => !stopWords.has(word));
+  
+  // Count frequency
+  const freq: Record<string, number> = {};
+  meaningfulWords.forEach(word => {
+    freq[word] = (freq[word] || 0) + 1;
+  });
+  
+  // Return top keywords
+  return Object.entries(freq)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([word]) => word);
+};
 
-Before this, I scaled recruiting systems at high-growth teams and saw firsthand how manual workflows slow everything down.
-
-Today, I help ${icp}s streamline operations, automate candidate movement, and give their teams more time to focus on real conversations — not admin tasks.`,
-    positioningAngles: [
-      {
-        title: "Authority",
-        description: `Recognized recruiter-ops expert helping ${icp}s modernize hiring systems.`,
-      },
-      {
-        title: "Problem-Solver",
-        description: "Fixing broken hiring workflows with automation and structured pipelines.",
-      },
-      {
-        title: "Social Proof",
-        description: `120+ ${icp}s rely on HireFlow to move faster with fewer resources.`,
-      },
-    ],
-    keywordScore: 78,
-    detectedKeywords: ["recruiting", "hiring", "workflow", "talent teams"],
-    recommendedKeywords: ["CHRO", "talent acquisition", "recruiting ops", "ATS integration"],
+// Calculate keyword relevance score
+const calculateKeywordScore = (detectedKeywords: string[], targetIcp: string): { score: number; missingKeywords: string[] } => {
+  const icpKeywords: Record<string, string[]> = {
+    founders: ["startup", "scale", "growth", "funding", "product", "market", "revenue"],
+    ceos: ["strategy", "leadership", "growth", "revenue", "executive", "board"],
+    chros: ["talent", "hiring", "recruiting", "culture", "hr", "workforce", "retention"],
+    "talent leaders": ["recruiting", "hiring", "talent", "acquisition", "pipeline", "candidates"],
+    revops: ["revenue", "operations", "pipeline", "sales", "crm", "automation", "efficiency"],
+    "vps of sales": ["sales", "revenue", "quota", "pipeline", "deals", "closing", "team"],
+    "marketing leaders": ["marketing", "brand", "demand", "leads", "campaigns", "growth"],
+    ctos: ["technology", "engineering", "architecture", "scaling", "infrastructure", "product"],
   };
+
+  const icpLower = targetIcp.toLowerCase();
+  let relevantKeywords: string[] = [];
+  
+  Object.entries(icpKeywords).forEach(([key, keywords]) => {
+    if (icpLower.includes(key) || key.includes(icpLower)) {
+      relevantKeywords = [...relevantKeywords, ...keywords];
+    }
+  });
+  
+  if (relevantKeywords.length === 0) {
+    relevantKeywords = ["results", "growth", "impact", "value", "solution", "expert"];
+  }
+
+  const detectedSet = new Set(detectedKeywords);
+  const matchCount = relevantKeywords.filter(kw => detectedSet.has(kw)).length;
+  const score = Math.min(100, Math.round((matchCount / Math.min(5, relevantKeywords.length)) * 100));
+  
+  const missingKeywords = relevantKeywords
+    .filter(kw => !detectedSet.has(kw))
+    .slice(0, 4);
+
+  return { score: Math.max(20, score), missingKeywords };
 };
 
 const Index = () => {
@@ -61,24 +163,76 @@ const Index = () => {
     inputSectionRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const handleFormSubmit = async (formData: any) => {
+  const handleFormSubmit = async (formData: FormData) => {
     setIsLoading(true);
     setShowResults(false);
     
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 3500));
-    
-    // Generate mock results
-    const mockResults = generateMockResults(formData);
-    
-    setResults(mockResults);
-    setIsLoading(false);
-    setShowResults(true);
-    
-    // Scroll to results after a brief delay
-    setTimeout(() => {
-      window.scrollTo({ top: window.innerHeight, behavior: "smooth" });
-    }, 100);
+    try {
+      // Calculate rule-based scores
+      const { score, verdict, reason, holdingBack } = calculateClarityScore(
+        formData.headline, 
+        formData.aboutSection, 
+        formData.targetIcp
+      );
+      
+      const detectedKeywords = extractKeywords(`${formData.headline} ${formData.aboutSection}`);
+      const { score: keywordScore, missingKeywords } = calculateKeywordScore(detectedKeywords, formData.targetIcp);
+
+      // Call AI for content generation
+      const { data, error } = await supabase.functions.invoke('optimize-profile', {
+        body: {
+          headline: formData.headline,
+          aboutSection: formData.aboutSection,
+          role: formData.role || "Founder",
+          targetIcp: formData.targetIcp || "Founders",
+          tone: formData.tone,
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to optimize profile');
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      // Combine rule-based analysis with AI-generated content
+      const finalResults = {
+        score,
+        scoreVerdict: verdict,
+        scoreReason: reason,
+        holdingBack,
+        headlines: [
+          { angle: "Authority Angle", text: data.headlines?.authority || "Unable to generate headline" },
+          { angle: "Problem-Solver Angle", text: data.headlines?.problemSolver || "Unable to generate headline" },
+          { angle: "Social Proof Angle", text: data.headlines?.socialProof || "Unable to generate headline" },
+        ],
+        aboutSection: data.aboutSection || "Unable to generate about section",
+        positioningAngles: [
+          { title: "Authority", description: data.positioningAngles?.authority || "Position yourself as an expert" },
+          { title: "Problem-Solver", description: data.positioningAngles?.problemSolver || "Focus on solutions you provide" },
+          { title: "Social Proof", description: data.positioningAngles?.socialProof || "Leverage your track record" },
+        ],
+        keywordScore,
+        detectedKeywords,
+        missingKeywords,
+      };
+      
+      setResults(finalResults);
+      setShowResults(true);
+      
+      // Scroll to results
+      setTimeout(() => {
+        window.scrollTo({ top: window.innerHeight, behavior: "smooth" });
+      }, 100);
+      
+    } catch (error) {
+      console.error('Error optimizing profile:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to analyze profile. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
