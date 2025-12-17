@@ -11,33 +11,48 @@ serve(async (req) => {
   }
 
   try {
-    const { headline, aboutSection, role, targetIcp, tone } = await req.json();
+    const { headline, aboutSection, role, targetIcp, tones } = await req.json();
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    console.log('Processing profile optimization request:', { role, targetIcp, tone });
+    console.log('Processing profile optimization request:', { role, targetIcp, tones });
 
-    const toneGuidance = {
+    const toneGuidance: Record<string, string> = {
       bold: "Use strong verbs, direct language, and confident assertions. Be punchy and assertive.",
       professional: "Use neutral, credible language. Be polished and trustworthy.",
-      casual: "Use lighter, conversational language. Be approachable and friendly."
+      casual: "Use lighter, conversational language. Be approachable and friendly.",
+      analytical: "Use data-driven language. Be precise and logical.",
+      direct: "Be straightforward and to the point. No fluff.",
+      persuasive: "Use compelling language that motivates action. Be influential.",
+      minimal: "Use concise, stripped-down language. Every word must earn its place.",
+      confident: "Project certainty and expertise. Be authoritative without arrogance.",
     };
 
-    const systemPrompt = `You are a LinkedIn positioning expert who helps founders optimize their profiles for maximum authority and inbound leads.
+    // Build combined tone guidance
+    const selectedTones = Array.isArray(tones) ? tones : [tones || 'bold'];
+    const toneInstructions = selectedTones
+      .map((t: string) => toneGuidance[t] || '')
+      .filter(Boolean)
+      .join(' ');
+
+    const systemPrompt = `You are a LinkedIn positioning expert who helps professionals optimize their profiles for maximum authority and inbound leads.
 
 Your task is to analyze the provided LinkedIn headline and about section, then generate optimized versions.
 
 CRITICAL RULES:
 - Do NOT invent metrics or social proof that wasn't provided
 - If no social proof exists, phrase carefully without false claims
-- Keep the about section between 120-150 words, 3 short paragraphs
-- Make content skimmable and founder-friendly
+- Keep the about section between 120 and 150 words, 3 short paragraphs
+- Make content skimmable and professional
 - Ensure clear ICP, problem, and outcome are present
+- Never use the word "founder" unless it appears in the original content
 
-TONE: ${toneGuidance[tone as keyof typeof toneGuidance] || toneGuidance.bold}
+TONE INSTRUCTIONS: ${toneInstructions}
+
+When multiple tones are specified, blend them intelligently. If tones conflict, prioritize clarity over creativity.
 
 Respond in valid JSON format with this exact structure:
 {
@@ -46,11 +61,11 @@ Respond in valid JSON format with this exact structure:
     "problemSolver": "Problem + who it's for + mechanism formula", 
     "socialProof": "Trusted by X + what you do + result formula (only if proof provided, otherwise rephrase)"
   },
-  "aboutSection": "Optimized about section (120-150 words, 3 paragraphs)",
+  "aboutSection": "Optimized about section (120 to 150 words, 3 paragraphs)",
   "positioningAngles": {
-    "authority": "One sharp positioning one-liner",
-    "problemSolver": "One sharp positioning one-liner",
-    "socialProof": "One sharp positioning one-liner"
+    "authority": "One sharp positioning one liner",
+    "problemSolver": "One sharp positioning one liner",
+    "socialProof": "One sharp positioning one liner"
   }
 }`;
 
@@ -64,7 +79,7 @@ ${aboutSection}
 ROLE: ${role}
 TARGET ICP: ${targetIcp}
 
-Generate optimized headlines (3 variants), an optimized about section, and positioning angles. Remember to adapt to the ${tone} tone.`;
+Generate optimized headlines (3 variants), an optimized about section, and positioning angles. Apply the following tones: ${selectedTones.join(', ')}.`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
