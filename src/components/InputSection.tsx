@@ -4,10 +4,10 @@ import { Input } from "@/components/ui/input";
 import { ArrowRight, Sparkles } from "lucide-react";
 
 interface FormData {
-  linkedinUrl: string;
+  headline: string;
+  aboutSection: string;
   role: string;
   targetIcp: string;
-  customIcp: string;
   tone: "bold" | "professional" | "casual";
 }
 
@@ -22,30 +22,36 @@ const icpOptions = [
   "CHROs",
   "Talent Leaders",
   "RevOps",
-  "Other",
+  "VPs of Sales",
+  "Marketing Leaders",
+  "CTOs",
 ];
 
 const InputSection = ({ onSubmit, isLoading }: InputSectionProps) => {
   const [formData, setFormData] = useState<FormData>({
-    linkedinUrl: "",
+    headline: "",
+    aboutSection: "",
     role: "",
-    targetIcp: "Founders",
-    customIcp: "",
+    targetIcp: "",
     tone: "bold",
   });
-  const [errors, setErrors] = useState<{ linkedinUrl?: string }>({});
+  const [errors, setErrors] = useState<{ headline?: string; aboutSection?: string }>({});
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate LinkedIn URL
-    if (!formData.linkedinUrl.trim()) {
-      setErrors({ linkedinUrl: "Please enter a valid LinkedIn URL" });
-      return;
+    const newErrors: { headline?: string; aboutSection?: string } = {};
+    
+    if (!formData.headline.trim()) {
+      newErrors.headline = "Please enter your current headline";
     }
     
-    if (!formData.linkedinUrl.includes("linkedin.com")) {
-      setErrors({ linkedinUrl: "Please enter a valid LinkedIn URL" });
+    if (!formData.aboutSection.trim()) {
+      newErrors.aboutSection = "Please enter your current About section";
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
     
@@ -65,26 +71,54 @@ const InputSection = ({ onSubmit, isLoading }: InputSectionProps) => {
           </div>
           
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* LinkedIn URL */}
+            {/* Current Headline */}
             <div className="space-y-2">
-              <label htmlFor="linkedin-url" className="block text-sm font-medium text-foreground">
-                LinkedIn Profile URL
+              <label htmlFor="headline" className="block text-sm font-medium text-foreground">
+                Current LinkedIn Headline <span className="text-primary">*</span>
               </label>
               <Input
-                id="linkedin-url"
-                type="url"
-                placeholder="https://linkedin.com/in/yourname"
-                value={formData.linkedinUrl}
+                id="headline"
+                type="text"
+                placeholder="Founder @ X | Building Y"
+                value={formData.headline}
                 onChange={(e) => {
-                  setFormData({ ...formData, linkedinUrl: e.target.value });
-                  if (errors.linkedinUrl) setErrors({});
+                  setFormData({ ...formData, headline: e.target.value });
+                  if (errors.headline) setErrors({ ...errors, headline: undefined });
                 }}
-                aria-describedby={errors.linkedinUrl ? "url-error" : undefined}
-                className={errors.linkedinUrl ? "border-destructive focus:border-destructive focus:ring-destructive/20" : ""}
+                aria-describedby={errors.headline ? "headline-error" : undefined}
+                className={errors.headline ? "border-destructive focus:border-destructive focus:ring-destructive/20" : ""}
               />
-              {errors.linkedinUrl && (
-                <p id="url-error" className="text-sm text-destructive">
-                  {errors.linkedinUrl}
+              {errors.headline && (
+                <p id="headline-error" className="text-sm text-destructive">
+                  {errors.headline}
+                </p>
+              )}
+            </div>
+
+            {/* Current About Section */}
+            <div className="space-y-2">
+              <label htmlFor="about" className="block text-sm font-medium text-foreground">
+                Current LinkedIn About Section <span className="text-primary">*</span>
+              </label>
+              <textarea
+                id="about"
+                placeholder="I'm a founder who loves building products…"
+                value={formData.aboutSection}
+                onChange={(e) => {
+                  setFormData({ ...formData, aboutSection: e.target.value });
+                  if (errors.aboutSection) setErrors({ ...errors, aboutSection: undefined });
+                }}
+                rows={6}
+                aria-describedby={errors.aboutSection ? "about-error" : undefined}
+                className={`flex w-full rounded-lg border bg-input px-4 py-3 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200 resize-none ${
+                  errors.aboutSection 
+                    ? "border-destructive focus:border-destructive focus:ring-destructive/20" 
+                    : "border-border focus:border-primary"
+                }`}
+              />
+              {errors.aboutSection && (
+                <p id="about-error" className="text-sm text-destructive">
+                  {errors.aboutSection}
                 </p>
               )}
             </div>
@@ -97,7 +131,7 @@ const InputSection = ({ onSubmit, isLoading }: InputSectionProps) => {
               <Input
                 id="role"
                 type="text"
-                placeholder="Founder & CEO, SaaS for recruiting teams"
+                placeholder="Founder & CEO, SaaS"
                 value={formData.role}
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
               />
@@ -108,34 +142,25 @@ const InputSection = ({ onSubmit, isLoading }: InputSectionProps) => {
               <label htmlFor="target-icp" className="block text-sm font-medium text-foreground">
                 Target ICP
               </label>
-              <select
+              <Input
                 id="target-icp"
+                type="text"
+                placeholder="CHROs, Talent Leaders, RevOps"
                 value={formData.targetIcp}
                 onChange={(e) => setFormData({ ...formData, targetIcp: e.target.value })}
-                className="flex h-12 w-full rounded-lg border border-border bg-input px-4 py-3 text-base text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200"
-              >
+                list="icp-suggestions"
+              />
+              <datalist id="icp-suggestions">
                 {icpOptions.map((option) => (
-                  <option key={option} value={option} className="bg-card">
-                    {option}
-                  </option>
+                  <option key={option} value={option} />
                 ))}
-              </select>
-              
-              {formData.targetIcp === "Other" && (
-                <Input
-                  type="text"
-                  placeholder="Specify your target ICP"
-                  value={formData.customIcp}
-                  onChange={(e) => setFormData({ ...formData, customIcp: e.target.value })}
-                  className="mt-3"
-                />
-              )}
+              </datalist>
             </div>
             
             {/* Tone Selector */}
             <div className="space-y-3">
               <label className="block text-sm font-medium text-foreground">
-                Tone
+                Tone Preference
               </label>
               <div className="flex flex-wrap gap-3">
                 {(["bold", "professional", "casual"] as const).map((tone) => (

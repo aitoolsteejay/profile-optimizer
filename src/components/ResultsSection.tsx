@@ -1,16 +1,19 @@
-import { Check, Copy, TrendingUp, Target, Award, Users, Zap } from "lucide-react";
+import { Check, Copy, TrendingUp, Target, Award, Zap, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
 interface ResultsSectionProps {
   results: {
     score: number;
+    scoreVerdict: string;
+    scoreReason: string;
+    holdingBack: string[];
     headlines: Array<{ angle: string; text: string }>;
     aboutSection: string;
     positioningAngles: Array<{ title: string; description: string }>;
     keywordScore: number;
     detectedKeywords: string[];
-    recommendedKeywords: string[];
+    missingKeywords: string[];
   };
 }
 
@@ -25,20 +28,14 @@ const ResultsSection = ({ results }: ResultsSectionProps) => {
 
   const getScoreColor = (score: number) => {
     if (score >= 70) return "text-green-400";
-    if (score >= 40) return "text-primary";
+    if (score >= 50) return "text-primary";
     return "text-destructive";
-  };
-
-  const getScoreMessage = (score: number) => {
-    if (score >= 70) return "Your profile has strong positioning fundamentals.";
-    if (score >= 40) return "Your profile has potential but lacks clear positioning for your ICP.";
-    return "Your profile does not clearly communicate what problem you solve or who it's for.";
   };
 
   return (
     <section className="py-16 px-6">
       <div className="max-w-4xl mx-auto space-y-10">
-        {/* Profile Clarity Score */}
+        {/* 1. Profile Clarity Score */}
         <div className="card-elevated p-8 text-center animate-scale-in" style={{ animationDelay: "0.1s" }}>
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">
             Profile Clarity Score
@@ -47,13 +44,38 @@ const ResultsSection = ({ results }: ResultsSectionProps) => {
             {results.score}
             <span className="text-3xl text-muted-foreground font-normal"> / 100</span>
           </div>
-          <p className="text-lg text-foreground/80 max-w-lg mx-auto">
-            {getScoreMessage(results.score)}
+          <p className="text-xl font-semibold text-foreground mb-2">
+            {results.scoreVerdict}
+          </p>
+          <p className="text-foreground/70 max-w-lg mx-auto">
+            {results.scoreReason}
           </p>
           <div className="accent-divider mt-6 max-w-xs mx-auto" />
         </div>
 
-        {/* Optimized Headlines */}
+        {/* 2. What's Holding You Back */}
+        {results.holdingBack.length > 0 && (
+          <div className="animate-slide-up" style={{ animationDelay: "0.15s" }}>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-10 w-10 rounded-lg bg-destructive/10 flex items-center justify-center">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+              </div>
+              <h3 className="text-2xl font-bold">What's Holding Your Profile Back</h3>
+            </div>
+            <div className="card-elevated p-6">
+              <ul className="space-y-3">
+                {results.holdingBack.map((issue, index) => (
+                  <li key={index} className="flex items-start gap-3">
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-destructive mt-2.5 shrink-0" />
+                    <span className="text-foreground/80">{issue}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* 3. Optimized Headlines */}
         <div className="animate-slide-up" style={{ animationDelay: "0.2s" }}>
           <div className="flex items-center gap-3 mb-6">
             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -92,7 +114,7 @@ const ResultsSection = ({ results }: ResultsSectionProps) => {
           </div>
         </div>
 
-        {/* Optimized About Section */}
+        {/* 4. Optimized About Section */}
         <div className="animate-slide-up" style={{ animationDelay: "0.3s" }}>
           <div className="flex items-center gap-3 mb-6">
             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -131,7 +153,7 @@ const ResultsSection = ({ results }: ResultsSectionProps) => {
           </div>
         </div>
 
-        {/* Positioning Angles */}
+        {/* 5. Positioning Angles */}
         <div className="animate-slide-up" style={{ animationDelay: "0.4s" }}>
           <div className="flex items-center gap-3 mb-6">
             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -149,19 +171,19 @@ const ResultsSection = ({ results }: ResultsSectionProps) => {
           </div>
         </div>
 
-        {/* Keyword ICP Score */}
+        {/* 6. Keyword & ICP Score */}
         <div className="animate-slide-up" style={{ animationDelay: "0.5s" }}>
           <div className="flex items-center gap-3 mb-6">
             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
               <TrendingUp className="h-5 w-5 text-primary" />
             </div>
-            <h3 className="text-2xl font-bold">Keyword ICP Score</h3>
+            <h3 className="text-2xl font-bold">Keyword & ICP Relevance</h3>
           </div>
           <div className="card-elevated p-6 md:p-8">
             {/* Score bar */}
             <div className="mb-6">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-muted-foreground">ICP Relevance</span>
+                <span className="text-sm text-muted-foreground">ICP Relevance Score</span>
                 <span className={`text-2xl font-bold ${getScoreColor(results.keywordScore)}`}>
                   {results.keywordScore} / 100
                 </span>
@@ -188,18 +210,18 @@ const ResultsSection = ({ results }: ResultsSectionProps) => {
                 ))}
               </div>
             </div>
-            
-            {/* Recommendation */}
-            <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
-              <p className="text-foreground/80">
-                <span className="font-semibold text-primary">Recommendation:</span>{" "}
-                Add keywords like{" "}
-                <span className="font-medium">
-                  {results.recommendedKeywords.join(", ")}
-                </span>{" "}
-                to increase clarity and authority.
-              </p>
-            </div>
+
+            {/* Missing keywords */}
+            {results.missingKeywords.length > 0 && (
+              <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
+                <p className="text-foreground/80">
+                  <span className="font-semibold text-primary">Missing High-Signal Keywords:</span>{" "}
+                  <span className="font-medium">
+                    {results.missingKeywords.join(", ")}
+                  </span>
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
