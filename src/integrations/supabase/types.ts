@@ -31,6 +31,7 @@ export type Database = {
           selected_tones: string[]
           target_icp: string | null
           timestamp: string
+          user_id: string | null
         }
         Insert: {
           current_about: string
@@ -48,6 +49,7 @@ export type Database = {
           selected_tones: string[]
           target_icp?: string | null
           timestamp?: string
+          user_id?: string | null
         }
         Update: {
           current_about?: string
@@ -65,6 +67,7 @@ export type Database = {
           selected_tones?: string[]
           target_icp?: string | null
           timestamp?: string
+          user_id?: string | null
         }
         Relationships: []
       }

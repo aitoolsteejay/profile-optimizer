@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import HeroSection from "@/components/HeroSection";
 import InputSection from "@/components/InputSection";
 import LoadingState from "@/components/LoadingState";
@@ -6,6 +7,9 @@ import ResultsSection from "@/components/ResultsSection";
 import CTASection from "@/components/CTASection";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
 
 type ToneOption = "bold" | "professional" | "casual" | "analytical" | "direct" | "persuasive" | "minimal" | "confident";
 
@@ -155,51 +159,63 @@ const calculateKeywordScore = (detectedKeywords: string[], targetIcp: string): {
   return { score: Math.max(20, score), missingKeywords };
 };
 
-// Log data to Supabase (silent, no user feedback)
-const logOptimization = async (
-  formData: FormData,
-  results: {
-    score: number;
-    keywordScore: number;
-    detectedKeywords: string[];
-    missingKeywords: string[];
-    headlines: Array<{ angle: string; text: string }>;
-    aboutSection: string;
-    positioningAngles: Array<{ title: string; description: string }>;
-  }
-) => {
-  try {
-    const effectiveIcp = formData.targetIcp === "Other" ? formData.customIcp : formData.targetIcp;
-    
-    await supabase.from('profile_optimizations').insert({
-      current_headline: formData.headline,
-      current_about: formData.aboutSection,
-      role: formData.role || null,
-      target_icp: effectiveIcp || null,
-      custom_icp_if_any: formData.targetIcp === "Other" ? formData.customIcp : null,
-      selected_tones: formData.tones,
-      profile_clarity_score: results.score,
-      icp_relevance_score: results.keywordScore,
-      detected_keywords: results.detectedKeywords,
-      missing_keywords: results.missingKeywords,
-      optimized_headlines: results.headlines,
-      optimized_about: results.aboutSection,
-      positioning_angles: results.positioningAngles,
-    });
-  } catch (error) {
-    // Silent fail - don't interrupt user experience
-    console.error('Failed to log optimization:', error);
-  }
-};
-
 const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [results, setResults] = useState<any>(null);
   const inputSectionRef = useRef<HTMLDivElement>(null);
+  const { user, loading, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
 
   const scrollToInput = () => {
     inputSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Log data to Supabase with user_id
+  const logOptimization = async (
+    formData: FormData,
+    resultsData: {
+      score: number;
+      keywordScore: number;
+      detectedKeywords: string[];
+      missingKeywords: string[];
+      headlines: Array<{ angle: string; text: string }>;
+      aboutSection: string;
+      positioningAngles: Array<{ title: string; description: string }>;
+    }
+  ) => {
+    if (!user) return;
+    
+    try {
+      const effectiveIcp = formData.targetIcp === "Other" ? formData.customIcp : formData.targetIcp;
+      
+      await supabase.from('profile_optimizations').insert({
+        user_id: user.id,
+        current_headline: formData.headline,
+        current_about: formData.aboutSection,
+        role: formData.role || null,
+        target_icp: effectiveIcp || null,
+        custom_icp_if_any: formData.targetIcp === "Other" ? formData.customIcp : null,
+        selected_tones: formData.tones,
+        profile_clarity_score: resultsData.score,
+        icp_relevance_score: resultsData.keywordScore,
+        detected_keywords: resultsData.detectedKeywords,
+        missing_keywords: resultsData.missingKeywords,
+        optimized_headlines: resultsData.headlines,
+        optimized_about: resultsData.aboutSection,
+        positioning_angles: resultsData.positioningAngles,
+      });
+    } catch (error) {
+      // Silent fail - don't interrupt user experience
+      console.error('Failed to log optimization:', error);
+    }
   };
 
   const handleFormSubmit = async (formData: FormData) => {
@@ -279,8 +295,39 @@ const Index = () => {
     }
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null; // Will redirect via useEffect
+  }
+
   return (
     <main className="min-h-screen bg-background">
+      {/* User header */}
+      <div className="absolute top-4 right-4 z-10 flex items-center gap-3">
+        <span className="text-muted-foreground text-sm hidden sm:block">{user.email}</span>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleSignOut}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Sign Out
+        </Button>
+      </div>
+
       {/* Hero */}
       <HeroSection onCtaClick={scrollToInput} />
       
