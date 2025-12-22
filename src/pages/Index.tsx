@@ -6,6 +6,7 @@ import ResultsSection from "@/components/ResultsSection";
 import CTASection from "@/components/CTASection";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import myntmoreLogo from "@/assets/myntmore-logo.png";
 
 type ToneOption = "bold" | "professional" | "casual" | "analytical" | "direct" | "persuasive" | "minimal" | "confident";
 
@@ -263,6 +264,9 @@ const Index = () => {
 
   return (
     <main className="min-h-screen bg-background">
+      <header className="absolute top-4 left-4 z-50">
+        <img src={myntmoreLogo} alt="Myntmore" className="h-10 w-auto" />
+      </header>
       <HeroSection onCtaClick={scrollToInput} />
       
       <div ref={inputSectionRef}>

@@ -1,6 +1,7 @@
-import { Check, Copy, TrendingUp, Target, Award, Zap, AlertTriangle } from "lucide-react";
+import { Check, Copy, TrendingUp, Target, Award, Zap, AlertTriangle, Download } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import jsPDF from "jspdf";
 
 interface ResultsSectionProps {
   results: {
@@ -32,8 +33,130 @@ const ResultsSection = ({ results }: ResultsSectionProps) => {
     return "text-destructive";
   };
 
+  const downloadPDF = () => {
+    const doc = new jsPDF();
+    let y = 20;
+    const margin = 20;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const maxWidth = pageWidth - margin * 2;
+
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("Profile Optimization Results", margin, y);
+    y += 15;
+
+    // Profile Clarity Score
+    doc.setFontSize(14);
+    doc.text(`Profile Clarity Score: ${results.score}/100`, margin, y);
+    y += 8;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    const verdictLines = doc.splitTextToSize(`${results.scoreVerdict} ${results.scoreReason}`, maxWidth);
+    doc.text(verdictLines, margin, y);
+    y += verdictLines.length * 5 + 10;
+
+    // What's Holding Back
+    if (results.holdingBack.length > 0) {
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("What's Holding Your Profile Back", margin, y);
+      y += 8;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      results.holdingBack.forEach((issue) => {
+        const lines = doc.splitTextToSize(`• ${issue}`, maxWidth);
+        if (y + lines.length * 5 > 280) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.text(lines, margin, y);
+        y += lines.length * 5 + 2;
+      });
+      y += 8;
+    }
+
+    // Headlines
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    if (y > 250) { doc.addPage(); y = 20; }
+    doc.text("Optimized Headlines", margin, y);
+    y += 8;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    results.headlines.forEach((headline) => {
+      const lines = doc.splitTextToSize(`${headline.angle}: ${headline.text}`, maxWidth);
+      if (y + lines.length * 5 > 280) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(lines, margin, y);
+      y += lines.length * 5 + 4;
+    });
+    y += 6;
+
+    // About Section
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    if (y > 250) { doc.addPage(); y = 20; }
+    doc.text("Optimized About Section", margin, y);
+    y += 8;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    const aboutLines = doc.splitTextToSize(results.aboutSection, maxWidth);
+    aboutLines.forEach((line: string) => {
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(line, margin, y);
+      y += 5;
+    });
+    y += 10;
+
+    // Positioning Angles
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    if (y > 250) { doc.addPage(); y = 20; }
+    doc.text("Positioning Angles", margin, y);
+    y += 8;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    results.positioningAngles.forEach((angle) => {
+      const lines = doc.splitTextToSize(`${angle.title}: ${angle.description}`, maxWidth);
+      if (y + lines.length * 5 > 280) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(lines, margin, y);
+      y += lines.length * 5 + 4;
+    });
+    y += 6;
+
+    // Keywords
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    if (y > 250) { doc.addPage(); y = 20; }
+    doc.text(`ICP Relevance Score: ${results.keywordScore}/100`, margin, y);
+    y += 8;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Detected Keywords: ${results.detectedKeywords.join(", ")}`, margin, y);
+    y += 6;
+    if (results.missingKeywords.length > 0) {
+      doc.text(`Missing Keywords: ${results.missingKeywords.join(", ")}`, margin, y);
+    }
+
+    doc.save("profile-optimization-results.pdf");
+  };
+
   return (
     <section className="py-16 px-6">
+      <div className="max-w-4xl mx-auto mb-6 flex justify-end">
+        <Button onClick={downloadPDF} variant="outline" className="gap-2">
+          <Download className="h-4 w-4" />
+          Download as PDF
+        </Button>
+      </div>
       <div className="max-w-4xl mx-auto space-y-10">
         {/* 1. Profile Clarity Score */}
         <div className="card-elevated p-8 text-center animate-scale-in" style={{ animationDelay: "0.1s" }}>
