@@ -2,3 +2,6 @@ project_id = "dbaxhgedupktogldzzpk"
 
 [functions.optimize-profile]
 verify_jwt = false
+
+[functions.scrape-linkedin]
+verify_jwt = false
