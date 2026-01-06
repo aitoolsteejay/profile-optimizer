@@ -2,6 +2,7 @@ import { Check, Copy, TrendingUp, Target, Award, Zap, AlertTriangle, Download } 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import jsPDF from "jspdf";
+import type { QuotedIssue } from "./InputSection";
 
 interface ResultsSectionProps {
   results: {
@@ -9,6 +10,7 @@ interface ResultsSectionProps {
     scoreVerdict: string;
     scoreReason: string;
     holdingBack: string[];
+    quotedIssues?: QuotedIssue[];
     headlines: Array<{ angle: string; text: string }>;
     aboutSection: string;
     positioningAngles: Array<{ title: string; description: string }>;
@@ -55,15 +57,22 @@ const ResultsSection = ({ results }: ResultsSectionProps) => {
     doc.text(verdictLines, margin, y);
     y += verdictLines.length * 5 + 10;
 
-    // What's Holding Back
-    if (results.holdingBack.length > 0) {
+    // What's Holding Back (with quoted issues)
+    const issuesExist = (results.quotedIssues && results.quotedIssues.length > 0) || results.holdingBack.length > 0;
+    if (issuesExist) {
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
       doc.text("What's Holding Your Profile Back", margin, y);
       y += 8;
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      results.holdingBack.forEach((issue) => {
+      
+      // Use quoted issues if available
+      const issues = results.quotedIssues && results.quotedIssues.length > 0 
+        ? results.quotedIssues.map(qi => `${qi.explanation}${qi.quoted_text ? ` ("${qi.quoted_text}")` : ''}`)
+        : results.holdingBack;
+      
+      issues.forEach((issue) => {
         const lines = doc.splitTextToSize(`• ${issue}`, maxWidth);
         if (y + lines.length * 5 > 280) {
           doc.addPage();
@@ -149,6 +158,9 @@ const ResultsSection = ({ results }: ResultsSectionProps) => {
     doc.save("profile-optimization-results.pdf");
   };
 
+  // Determine which issues to display - prefer quoted issues
+  const hasQuotedIssues = results.quotedIssues && results.quotedIssues.length > 0;
+
   return (
     <section className="py-16 px-6">
       <div className="max-w-4xl mx-auto mb-6 flex justify-end">
@@ -175,8 +187,8 @@ const ResultsSection = ({ results }: ResultsSectionProps) => {
           </p>
         </div>
 
-        {/* 2. What's Holding You Back */}
-        {results.holdingBack.length > 0 && (
+        {/* 2. What's Holding You Back - with quoted feedback */}
+        {(hasQuotedIssues || results.holdingBack.length > 0) && (
           <div className="animate-slide-up" style={{ animationDelay: "0.15s" }}>
             <div className="flex items-center gap-3 mb-6">
               <div className="h-10 w-10 rounded-lg bg-destructive/10 flex items-center justify-center">
@@ -185,13 +197,29 @@ const ResultsSection = ({ results }: ResultsSectionProps) => {
               <h3 className="text-2xl font-bold">What's Holding Your Profile Back</h3>
             </div>
             <div className="card-elevated p-6">
-              <ul className="space-y-3">
-                {results.holdingBack.map((issue, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-destructive mt-2.5 shrink-0" />
-                    <span className="text-foreground/80">{issue}</span>
-                  </li>
-                ))}
+              <ul className="space-y-4">
+                {hasQuotedIssues ? (
+                  results.quotedIssues!.map((issue, index) => (
+                    <li key={index} className="flex items-start gap-3">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-destructive mt-2.5 shrink-0" />
+                      <div className="space-y-1">
+                        <span className="text-foreground/90">{issue.explanation}</span>
+                        {issue.quoted_text && (
+                          <p className="text-sm text-muted-foreground italic pl-4 border-l-2 border-muted">
+                            "{issue.quoted_text}"
+                          </p>
+                        )}
+                      </div>
+                    </li>
+                  ))
+                ) : (
+                  results.holdingBack.map((issue, index) => (
+                    <li key={index} className="flex items-start gap-3">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-destructive mt-2.5 shrink-0" />
+                      <span className="text-foreground/80">{issue}</span>
+                    </li>
+                  ))
+                )}
               </ul>
             </div>
           </div>
@@ -302,7 +330,6 @@ const ResultsSection = ({ results }: ResultsSectionProps) => {
             <h3 className="text-2xl font-bold">Keyword and ICP Relevance</h3>
           </div>
           
-          {/* Descriptive text */}
           <p className="text-muted-foreground text-sm mb-6 max-w-3xl">
             This analysis determines how well your profile aligns with the audience you want to attract and influences search visibility, message resonance, and inbound profile views.
           </p>

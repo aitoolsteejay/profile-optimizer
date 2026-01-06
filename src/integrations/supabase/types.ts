@@ -19,15 +19,20 @@ export type Database = {
           current_about: string
           current_headline: string
           custom_icp_if_any: string | null
+          data_source: string | null
           detected_keywords: string[] | null
           icp_relevance_score: number | null
           id: string
+          linkedin_url: string | null
           missing_keywords: string[] | null
           optimized_about: string | null
           optimized_headlines: Json | null
           positioning_angles: Json | null
           profile_clarity_score: number | null
+          quoted_issues: Json | null
           role: string | null
+          scraped_about: string | null
+          scraped_headline: string | null
           selected_tones: string[]
           target_icp: string | null
           timestamp: string
@@ -37,15 +42,20 @@ export type Database = {
           current_about: string
           current_headline: string
           custom_icp_if_any?: string | null
+          data_source?: string | null
           detected_keywords?: string[] | null
           icp_relevance_score?: number | null
           id?: string
+          linkedin_url?: string | null
           missing_keywords?: string[] | null
           optimized_about?: string | null
           optimized_headlines?: Json | null
           positioning_angles?: Json | null
           profile_clarity_score?: number | null
+          quoted_issues?: Json | null
           role?: string | null
+          scraped_about?: string | null
+          scraped_headline?: string | null
           selected_tones: string[]
           target_icp?: string | null
           timestamp?: string
@@ -55,15 +65,20 @@ export type Database = {
           current_about?: string
           current_headline?: string
           custom_icp_if_any?: string | null
+          data_source?: string | null
           detected_keywords?: string[] | null
           icp_relevance_score?: number | null
           id?: string
+          linkedin_url?: string | null
           missing_keywords?: string[] | null
           optimized_about?: string | null
           optimized_headlines?: Json | null
           positioning_angles?: Json | null
           profile_clarity_score?: number | null
+          quoted_issues?: Json | null
           role?: string | null
+          scraped_about?: string | null
+          scraped_headline?: string | null
           selected_tones?: string[]
           target_icp?: string | null
           timestamp?: string
