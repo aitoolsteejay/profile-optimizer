@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import HeroSection from "@/components/HeroSection";
-import InputSection from "@/components/InputSection";
+import InputSection, { FormData, QuotedIssue } from "@/components/InputSection";
 import LoadingState from "@/components/LoadingState";
 import ResultsSection from "@/components/ResultsSection";
 import CTASection from "@/components/CTASection";
@@ -8,66 +8,104 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import myntmoreLogo from "@/assets/myntmore-logo.png";
 
-type ToneOption = "bold" | "professional" | "casual" | "analytical" | "direct" | "persuasive" | "minimal" | "confident";
+// Helper to find exact quotes from profile text
+const findQuote = (text: string, patterns: string[]): string | null => {
+  const lowerText = text.toLowerCase();
+  for (const pattern of patterns) {
+    const idx = lowerText.indexOf(pattern.toLowerCase());
+    if (idx !== -1) {
+      // Extract surrounding context (up to 60 chars)
+      const start = Math.max(0, idx);
+      const end = Math.min(text.length, idx + Math.min(60, pattern.length + 20));
+      return text.slice(start, end).trim();
+    }
+  }
+  return null;
+};
 
-interface FormData {
-  headline: string;
-  aboutSection: string;
-  role: string;
-  targetIcp: string;
-  customIcp: string;
-  tones: ToneOption[];
-}
-
-// Rule-based Profile Clarity Score calculation
+// Rule-based Profile Clarity Score calculation with quoted feedback
 const calculateClarityScore = (headline: string, aboutSection: string, targetIcp: string): { 
   score: number; 
   verdict: string; 
   reason: string; 
-  holdingBack: string[] 
+  holdingBack: string[];
+  quotedIssues: QuotedIssue[];
 } => {
   let score = 100;
   const holdingBack: string[] = [];
+  const quotedIssues: QuotedIssue[] = [];
   const combined = `${headline} ${aboutSection}`.toLowerCase();
+  const combinedRaw = `${headline} ${aboutSection}`;
   const icpLower = targetIcp.toLowerCase();
 
+  // ICP check
   if (targetIcp && !combined.includes(icpLower) && !combined.includes(icpLower.replace(/s$/, ''))) {
     score -= 25;
-    holdingBack.push("Your target ICP is not clearly mentioned in your profile");
+    quotedIssues.push({
+      issue_type: "missing_icp",
+      quoted_text: "",
+      explanation: `No ICP detected. Your profile does not reference "${targetIcp}" in either the headline or About section.`
+    });
   }
 
+  // Problem statement check
   const problemIndicators = ["help", "solve", "fix", "reduce", "eliminate", "improve", "transform", "accelerate", "streamline", "automate", "simplify"];
   const hasProblem = problemIndicators.some(word => combined.includes(word));
   if (!hasProblem) {
     score -= 20;
-    holdingBack.push("No clear problem statement that shows what you solve");
+    quotedIssues.push({
+      issue_type: "no_problem_statement",
+      quoted_text: "",
+      explanation: "No clear problem statement found. Your profile does not explicitly state what problem you solve for your audience."
+    });
   }
 
+  // Outcomes check
   const outcomeIndicators = ["%", "x", "million", "billion", "thousand", "revenue", "growth", "increase", "decrease", "roi", "saved", "generated", "closed", "pipeline"];
   const numberPattern = /\d+/;
   const hasOutcome = outcomeIndicators.some(word => combined.includes(word)) || numberPattern.test(combined);
   if (!hasOutcome) {
     score -= 20;
-    holdingBack.push("Missing concrete outcomes or metrics that demonstrate value");
+    quotedIssues.push({
+      issue_type: "no_outcomes",
+      quoted_text: "",
+      explanation: "Missing concrete outcomes or metrics. Your profile does not include specific numbers, percentages, or measurable results."
+    });
   }
 
+  // Vague language check with quotes
   const vagueWords = ["passionate", "building", "love", "excited", "helping", "making the world", "journey", "mission-driven"];
-  const hasVague = vagueWords.some(word => combined.includes(word));
-  if (hasVague) {
+  const foundVague = vagueWords.filter(word => combined.includes(word));
+  if (foundVague.length > 0) {
     score -= 15;
-    holdingBack.push("Contains vague or generic language that doesn't differentiate you");
+    const quote = findQuote(combinedRaw, foundVague);
+    quotedIssues.push({
+      issue_type: "vague_language",
+      quoted_text: quote || foundVague[0],
+      explanation: `Your profile uses vague language that does not differentiate you.`
+    });
   }
 
+  // Credibility markers check
   const credibilityIndicators = ["ceo", "cto", "vp", "director", "head of", "ex-", "former", "led", "built", "scaled", "years", "clients", "companies", "trusted", "advisor", "consultant", "expert"];
   const hasCredibility = credibilityIndicators.some(word => combined.includes(word));
   if (!hasCredibility) {
     score -= 10;
-    holdingBack.push("No clear authority or credibility markers");
+    quotedIssues.push({
+      issue_type: "no_credibility",
+      quoted_text: "",
+      explanation: "No clear authority or credibility markers. Your profile lacks signals like titles, years of experience, or notable achievements."
+    });
   }
 
-  if (headline.length < 15 || !headline.includes("|") && !headline.includes("@")) {
+  // Headline structure check
+  if (headline.length < 15 || (!headline.includes("|") && !headline.includes("@"))) {
     score -= 10;
-    holdingBack.push("Role and positioning are unclear from the headline");
+    quotedIssues.push({
+      issue_type: "unclear_role",
+      quoted_text: headline.length > 0 ? headline.slice(0, 50) : "",
+      explanation: "Role and positioning are unclear from the headline. A strong headline typically includes your role and who you help."
+    });
   }
 
   score = Math.max(25, Math.min(90, score));
@@ -83,10 +121,15 @@ const calculateClarityScore = (headline: string, aboutSection: string, targetIcp
     reason = "Your profile has potential but lacks critical positioning elements. The optimizations below will dramatically increase your authority and relevance.";
   } else {
     verdict = "Your positioning needs work.";
-    reason = "Your profile doesn't clearly communicate what problem you solve or who you help. The rewrites below will transform how prospects perceive you.";
+    reason = "Your profile does not clearly communicate what problem you solve or who you help. The rewrites below will transform how prospects perceive you.";
   }
 
-  return { score, verdict, reason, holdingBack };
+  // Generate legacy holdingBack for backwards compatibility
+  quotedIssues.forEach(qi => {
+    holdingBack.push(qi.explanation);
+  });
+
+  return { score, verdict, reason, holdingBack, quotedIssues };
 };
 
 const extractKeywords = (content: string): string[] => {
@@ -144,7 +187,26 @@ const calculateKeywordScore = (detectedKeywords: string[], targetIcp: string): {
   return { score: Math.max(20, score), missingKeywords };
 };
 
-// Log data to Supabase (silent, no user feedback)
+// Scrape LinkedIn profile
+const scrapeLinkedInProfile = async (url: string): Promise<{ success: boolean; headline?: string; about?: string; role?: string; error?: string }> => {
+  try {
+    const { data, error } = await supabase.functions.invoke('scrape-linkedin', {
+      body: { url }
+    });
+
+    if (error) {
+      console.error('Scrape function error:', error);
+      return { success: false, error: error.message || 'Failed to fetch profile' };
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Scrape error:', error);
+    return { success: false, error: 'Failed to fetch profile. Please try again.' };
+  }
+};
+
+// Log data to Supabase (silent, non-blocking)
 const logOptimization = async (
   formData: FormData,
   results: {
@@ -155,12 +217,18 @@ const logOptimization = async (
     headlines: Array<{ angle: string; text: string }>;
     aboutSection: string;
     positioningAngles: Array<{ title: string; description: string }>;
+    quotedIssues?: QuotedIssue[];
   }
 ) => {
   try {
     const effectiveIcp = formData.targetIcp === "Other" ? formData.customIcp : formData.targetIcp;
     
     await supabase.from('profile_optimizations').insert({
+      linkedin_url: formData.linkedinUrl || null,
+      scraped_headline: formData.dataSource === "scraper" ? formData.headline : null,
+      scraped_about: formData.dataSource === "scraper" ? formData.aboutSection : null,
+      data_source: formData.dataSource,
+      quoted_issues: results.quotedIssues || [],
       current_headline: formData.headline,
       current_about: formData.aboutSection,
       role: formData.role || null,
@@ -197,7 +265,7 @@ const Index = () => {
     try {
       const effectiveIcp = formData.targetIcp === "Other" ? formData.customIcp : formData.targetIcp;
       
-      const { score, verdict, reason, holdingBack } = calculateClarityScore(
+      const { score, verdict, reason, holdingBack, quotedIssues } = calculateClarityScore(
         formData.headline, 
         formData.aboutSection, 
         effectiveIcp
@@ -229,6 +297,7 @@ const Index = () => {
         scoreVerdict: verdict,
         scoreReason: reason,
         holdingBack,
+        quotedIssues,
         headlines: [
           { angle: "Authority Angle", text: data.headlines?.authority || "Unable to generate headline" },
           { angle: "Problem Solver Angle", text: data.headlines?.problemSolver || "Unable to generate headline" },
@@ -270,7 +339,13 @@ const Index = () => {
       <HeroSection onCtaClick={scrollToInput} />
       
       <div ref={inputSectionRef}>
-        {!showResults && <InputSection onSubmit={handleFormSubmit} isLoading={isLoading} />}
+        {!showResults && (
+          <InputSection 
+            onSubmit={handleFormSubmit} 
+            isLoading={isLoading} 
+            onScrape={scrapeLinkedInProfile}
+          />
+        )}
       </div>
       
       {isLoading && <LoadingState />}
