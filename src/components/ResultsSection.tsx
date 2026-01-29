@@ -2,7 +2,12 @@ import { Check, Copy, TrendingUp, Target, Award, Zap, AlertTriangle, Download } 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import jsPDF from "jspdf";
-import type { QuotedIssue } from "./InputSection";
+
+interface QuotedIssue {
+  issue_type: string;
+  quoted_text: string;
+  explanation: string;
+}
 
 interface ResultsSectionProps {
   results: {
