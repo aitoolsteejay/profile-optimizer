@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      leads: {
+        Row: {
+          company_description: string
+          company_name: string
+          created_at: string
+          custom_icp: string | null
+          email: string
+          id: string
+          name: string
+          role: string
+          selected_tones: string[]
+          target_icp: string
+        }
+        Insert: {
+          company_description: string
+          company_name: string
+          created_at?: string
+          custom_icp?: string | null
+          email: string
+          id?: string
+          name: string
+          role: string
+          selected_tones?: string[]
+          target_icp: string
+        }
+        Update: {
+          company_description?: string
+          company_name?: string
+          created_at?: string
+          custom_icp?: string | null
+          email?: string
+          id?: string
+          name?: string
+          role?: string
+          selected_tones?: string[]
+          target_icp?: string
+        }
+        Relationships: []
+      }
       profile_optimizations: {
         Row: {
           current_about: string
