@@ -17,14 +17,12 @@ interface ProfileWizardProps {
 const ProfileWizard = ({ onComplete, isGenerating }: ProfileWizardProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [stepOneData, setStepOneData] = useState<StepOneData>({
-    linkedinUrl: "",
     headline: "",
     aboutSection: "",
     role: "",
     targetIcp: "",
     customIcp: "",
     tones: ["bold"],
-    dataSource: "manual",
   });
   const [stepTwoData, setStepTwoData] = useState<StepTwoData>({
     name: "",
