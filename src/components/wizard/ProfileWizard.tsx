@@ -17,11 +17,14 @@ interface ProfileWizardProps {
 const ProfileWizard = ({ onComplete, isGenerating }: ProfileWizardProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [stepOneData, setStepOneData] = useState<StepOneData>({
+    linkedinUrl: "",
+    headline: "",
+    aboutSection: "",
     role: "",
-    companyDescription: "",
     targetIcp: "",
     customIcp: "",
     tones: ["bold"],
+    dataSource: "manual",
   });
   const [stepTwoData, setStepTwoData] = useState<StepTwoData>({
     name: "",
@@ -42,9 +45,8 @@ const ProfileWizard = ({ onComplete, isGenerating }: ProfileWizardProps) => {
     setSubmitError(null);
 
     try {
-      // Save lead to Supabase
-      const effectiveIcp = stepOneData.targetIcp === "Other" 
-        ? stepOneData.customIcp 
+      const effectiveIcp = stepOneData.targetIcp === "Other"
+        ? stepOneData.customIcp
         : stepOneData.targetIcp;
 
       const { error } = await supabase.from("leads").insert({
@@ -52,8 +54,8 @@ const ProfileWizard = ({ onComplete, isGenerating }: ProfileWizardProps) => {
         email: data.email.trim().toLowerCase(),
         company_name: data.companyName.trim(),
         role: stepOneData.role.trim(),
-        company_description: stepOneData.companyDescription.trim(),
-        target_icp: effectiveIcp,
+        company_description: stepOneData.aboutSection.trim(),
+        target_icp: effectiveIcp || "Not specified",
         custom_icp: stepOneData.targetIcp === "Other" ? stepOneData.customIcp : null,
         selected_tones: stepOneData.tones,
       });
@@ -65,7 +67,6 @@ const ProfileWizard = ({ onComplete, isGenerating }: ProfileWizardProps) => {
         return;
       }
 
-      // Successfully saved, proceed to results
       setCurrentStep(3);
       onComplete({
         stepOne: stepOneData,

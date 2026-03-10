@@ -8,10 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import myntmoreLogo from "@/assets/myntmore-logo.png";
 
-// Rule-based Profile Clarity Score calculation
 const calculateClarityScore = (
-  role: string,
-  companyDescription: string,
+  headline: string,
+  aboutSection: string,
   targetIcp: string
 ): {
   score: number;
@@ -21,33 +20,27 @@ const calculateClarityScore = (
 } => {
   let score = 100;
   const holdingBack: string[] = [];
-  const combined = `${role} ${companyDescription}`.toLowerCase();
+  const combined = `${headline} ${aboutSection}`.toLowerCase();
 
-  // ICP alignment check
   const icpLower = targetIcp.toLowerCase();
-  if (!combined.includes(icpLower) && !combined.includes(icpLower.replace(/s$/, ""))) {
+  if (icpLower && !combined.includes(icpLower) && !combined.includes(icpLower.replace(/s$/, ""))) {
     score -= 15;
     holdingBack.push(`Your positioning does not explicitly reference "${targetIcp}" as your target audience.`);
   }
 
-  // Problem statement check
   const problemIndicators = ["help", "solve", "fix", "reduce", "eliminate", "improve", "transform", "accelerate", "streamline", "automate", "simplify"];
-  const hasProblem = problemIndicators.some((word) => combined.includes(word));
-  if (!hasProblem) {
+  if (!problemIndicators.some((word) => combined.includes(word))) {
     score -= 20;
     holdingBack.push("No clear problem statement found. Your positioning does not explicitly state what problem you solve.");
   }
 
-  // Outcomes check
   const outcomeIndicators = ["%", "x", "million", "billion", "thousand", "revenue", "growth", "increase", "decrease", "roi", "saved", "generated", "closed", "pipeline"];
   const numberPattern = /\d+/;
-  const hasOutcome = outcomeIndicators.some((word) => combined.includes(word)) || numberPattern.test(combined);
-  if (!hasOutcome) {
+  if (!outcomeIndicators.some((word) => combined.includes(word)) && !numberPattern.test(combined)) {
     score -= 15;
     holdingBack.push("Missing concrete outcomes or metrics. Consider adding specific numbers or percentages.");
   }
 
-  // Vague language check
   const vagueWords = ["passionate", "love", "excited", "making the world", "journey", "mission-driven"];
   const foundVague = vagueWords.filter((word) => combined.includes(word));
   if (foundVague.length > 0) {
@@ -55,10 +48,8 @@ const calculateClarityScore = (
     holdingBack.push(`Your positioning uses vague language like "${foundVague[0]}" which does not differentiate you.`);
   }
 
-  // Credibility markers check
   const credibilityIndicators = ["ceo", "cto", "vp", "director", "head of", "founder", "co-founder", "ex-", "former", "led", "built", "scaled", "years", "clients", "companies"];
-  const hasCredibility = credibilityIndicators.some((word) => combined.includes(word));
-  if (!hasCredibility) {
+  if (!credibilityIndicators.some((word) => combined.includes(word))) {
     score -= 10;
     holdingBack.push("No clear authority or credibility markers. Consider adding signals like years of experience or notable achievements.");
   }
@@ -83,28 +74,12 @@ const calculateClarityScore = (
 };
 
 const extractKeywords = (content: string): string[] => {
-  const words = content
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, " ")
-    .split(/\s+/)
-    .filter((word) => word.length > 3);
-
-  const stopWords = new Set([
-    "that", "this", "with", "have", "from", "they", "been", "were", "being",
-    "their", "which", "about", "would", "there", "could", "other", "into",
-    "more", "some", "such", "only", "than", "then", "them",
-  ]);
+  const words = content.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter((word) => word.length > 3);
+  const stopWords = new Set(["that", "this", "with", "have", "from", "they", "been", "were", "being", "their", "which", "about", "would", "there", "could", "other", "into", "more", "some", "such", "only", "than", "then", "them"]);
   const meaningfulWords = words.filter((word) => !stopWords.has(word));
-
   const freq: Record<string, number> = {};
-  meaningfulWords.forEach((word) => {
-    freq[word] = (freq[word] || 0) + 1;
-  });
-
-  return Object.entries(freq)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 8)
-    .map(([word]) => word);
+  meaningfulWords.forEach((word) => { freq[word] = (freq[word] || 0) + 1; });
+  return Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([word]) => word);
 };
 
 const calculateKeywordScore = (
@@ -123,13 +98,11 @@ const calculateKeywordScore = (
 
   const icpLower = targetIcp.toLowerCase();
   let relevantKeywords: string[] = [];
-
   Object.entries(icpKeywords).forEach(([key, keywords]) => {
     if (icpLower.includes(key) || key.includes(icpLower)) {
       relevantKeywords = [...relevantKeywords, ...keywords];
     }
   });
-
   if (relevantKeywords.length === 0) {
     relevantKeywords = ["results", "growth", "impact", "value", "solution", "expert"];
   }
@@ -137,7 +110,6 @@ const calculateKeywordScore = (
   const detectedSet = new Set(detectedKeywords);
   const matchCount = relevantKeywords.filter((kw) => detectedSet.has(kw)).length;
   const score = Math.min(100, Math.round((matchCount / Math.min(5, relevantKeywords.length)) * 100));
-
   const missingKeywords = relevantKeywords.filter((kw) => !detectedSet.has(kw)).slice(0, 4);
 
   return { score: Math.max(20, score), missingKeywords };
@@ -163,39 +135,32 @@ const Index = () => {
           ? wizardData.stepOne.customIcp
           : wizardData.stepOne.targetIcp;
 
-      // Calculate scores based on role and company description
       const { score, verdict, reason, holdingBack } = calculateClarityScore(
-        wizardData.stepOne.role,
-        wizardData.stepOne.companyDescription,
+        wizardData.stepOne.headline,
+        wizardData.stepOne.aboutSection,
         effectiveIcp
       );
 
       const detectedKeywords = extractKeywords(
-        `${wizardData.stepOne.role} ${wizardData.stepOne.companyDescription}`
+        `${wizardData.stepOne.headline} ${wizardData.stepOne.aboutSection}`
       );
       const { score: keywordScore, missingKeywords } = calculateKeywordScore(
         detectedKeywords,
         effectiveIcp
       );
 
-      // Call edge function to generate optimized content
       const { data, error } = await supabase.functions.invoke("optimize-profile", {
         body: {
-          headline: wizardData.stepOne.role,
-          aboutSection: wizardData.stepOne.companyDescription,
+          headline: wizardData.stepOne.headline,
+          aboutSection: wizardData.stepOne.aboutSection,
           role: wizardData.stepOne.role,
           targetIcp: effectiveIcp,
           tones: wizardData.stepOne.tones,
         },
       });
 
-      if (error) {
-        throw new Error(error.message || "Failed to optimize profile");
-      }
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
+      if (error) throw new Error(error.message || "Failed to optimize profile");
+      if (data.error) throw new Error(data.error);
 
       const finalResults = {
         score,
@@ -226,9 +191,7 @@ const Index = () => {
       }, 100);
     } catch (error) {
       console.error("Error optimizing profile:", error);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to analyze profile. Please try again."
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to analyze profile. Please try again.");
     } finally {
       setIsLoading(false);
     }
