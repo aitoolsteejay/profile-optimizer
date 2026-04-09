@@ -18,10 +18,12 @@ export type Database = {
         Row: {
           company_description: string
           company_name: string
+          company_website: string
           created_at: string
           custom_icp: string | null
           email: string
           id: string
+          linkedin_url: string
           name: string
           role: string
           selected_tones: string[]
@@ -30,10 +32,12 @@ export type Database = {
         Insert: {
           company_description: string
           company_name: string
+          company_website?: string
           created_at?: string
           custom_icp?: string | null
           email: string
           id?: string
+          linkedin_url?: string
           name: string
           role: string
           selected_tones?: string[]
@@ -42,10 +46,12 @@ export type Database = {
         Update: {
           company_description?: string
           company_name?: string
+          company_website?: string
           created_at?: string
           custom_icp?: string | null
           email?: string
           id?: string
+          linkedin_url?: string
           name?: string
           role?: string
           selected_tones?: string[]
