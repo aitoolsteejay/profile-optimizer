@@ -57,12 +57,13 @@ const LeadGate = ({ onComplete }: LeadGateProps) => {
     setSubmitError(null);
 
     try {
+      const d = result.data;
       const { error } = await supabase.from("leads").insert({
-        name: result.data.name,
-        company_name: result.data.companyName,
-        email: result.data.companyEmail,
-        company_website: result.data.companyWebsite,
-        linkedin_url: result.data.linkedinUrl,
+        name: d.name,
+        company_name: d.companyName,
+        email: d.companyEmail,
+        company_website: d.companyWebsite,
+        linkedin_url: d.linkedinUrl,
         role: "",
         company_description: "",
         target_icp: "Not specified",
@@ -75,7 +76,7 @@ const LeadGate = ({ onComplete }: LeadGateProps) => {
         return;
       }
 
-      onComplete(result.data);
+      onComplete(d);
     } catch (err) {
       console.error("Failed to save lead:", err);
       setSubmitError("Something went wrong. Please try again.");
