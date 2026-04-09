@@ -1,12 +1,15 @@
 import { useState, useRef } from "react";
-import HeroSection from "@/components/HeroSection";
-import ProfileWizard, { WizardData } from "@/components/wizard/ProfileWizard";
+import LeadGate, { LeadData } from "@/components/LeadGate";
+import ProfileWizard from "@/components/wizard/ProfileWizard";
+import { StepOneData } from "@/components/wizard/StepOne";
 import LoadingState from "@/components/LoadingState";
 import ResultsSection from "@/components/ResultsSection";
 import CTASection from "@/components/CTASection";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import myntmoreLogo from "@/assets/myntmore-logo.png";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "lucide-react";
 
 const calculateClarityScore = (
   headline: string,
@@ -116,33 +119,33 @@ const calculateKeywordScore = (
 };
 
 const Index = () => {
+  const [leadData, setLeadData] = useState<LeadData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [results, setResults] = useState<any>(null);
-  const inputSectionRef = useRef<HTMLDivElement>(null);
 
-  const scrollToInput = () => {
-    inputSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+  const handleLeadComplete = (data: LeadData) => {
+    setLeadData(data);
   };
 
-  const handleWizardComplete = async (wizardData: WizardData) => {
+  const handleWizardComplete = async (profileData: StepOneData) => {
     setIsLoading(true);
     setShowResults(false);
 
     try {
       const effectiveIcp =
-        wizardData.stepOne.targetIcp === "Other"
-          ? wizardData.stepOne.customIcp
-          : wizardData.stepOne.targetIcp;
+        profileData.targetIcp === "Other"
+          ? profileData.customIcp
+          : profileData.targetIcp;
 
       const { score, verdict, reason, holdingBack } = calculateClarityScore(
-        wizardData.stepOne.headline,
-        wizardData.stepOne.aboutSection,
+        profileData.headline,
+        profileData.aboutSection,
         effectiveIcp
       );
 
       const detectedKeywords = extractKeywords(
-        `${wizardData.stepOne.headline} ${wizardData.stepOne.aboutSection}`
+        `${profileData.headline} ${profileData.aboutSection}`
       );
       const { score: keywordScore, missingKeywords } = calculateKeywordScore(
         detectedKeywords,
@@ -151,11 +154,13 @@ const Index = () => {
 
       const { data, error } = await supabase.functions.invoke("optimize-profile", {
         body: {
-          headline: wizardData.stepOne.headline,
-          aboutSection: wizardData.stepOne.aboutSection,
-          role: wizardData.stepOne.role,
+          headline: profileData.headline,
+          aboutSection: profileData.aboutSection,
+          role: profileData.role,
           targetIcp: effectiveIcp,
-          tones: wizardData.stepOne.tones,
+          tones: profileData.tones,
+          userName: leadData?.name,
+          companyName: leadData?.companyName,
         },
       });
 
@@ -187,7 +192,7 @@ const Index = () => {
       setShowResults(true);
 
       setTimeout(() => {
-        window.scrollTo({ top: window.innerHeight, behavior: "smooth" });
+        window.scrollTo({ top: 0, behavior: "smooth" });
       }, 100);
     } catch (error) {
       console.error("Error optimizing profile:", error);
@@ -197,24 +202,41 @@ const Index = () => {
     }
   };
 
+  // Show lead gate first
+  if (!leadData) {
+    return <LeadGate onComplete={handleLeadComplete} />;
+  }
+
+  // After lead capture, show the tool
   return (
     <main className="min-h-screen bg-background">
-      <header className="absolute top-4 left-4 z-50">
-        <img src={myntmoreLogo} alt="Myntmore" className="h-10 w-auto" />
+      <header className="absolute top-6 left-6 z-50 flex items-center justify-between w-[calc(100%-3rem)]">
+        <img src={myntmoreLogo} alt="Myntmore" className="w-32 md:w-40 h-auto" />
+        <a
+          href="https://calendly.com/founder-myntmore/1-hour-meeting"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Button variant="hero" size="sm" className="gap-2">
+            <Calendar className="h-4 w-4" />
+            Book a Strategy Call
+          </Button>
+        </a>
       </header>
-      <HeroSection onCtaClick={scrollToInput} />
 
-      <div ref={inputSectionRef}>
-        {!showResults && (
+      {!showResults && !isLoading && (
+        <div className="pt-24">
           <ProfileWizard onComplete={handleWizardComplete} isGenerating={isLoading} />
-        )}
-      </div>
+        </div>
+      )}
 
       {isLoading && <LoadingState />}
 
       {showResults && results && (
         <>
-          <ResultsSection results={results} />
+          <div className="pt-24">
+            <ResultsSection results={results} />
+          </div>
           <CTASection />
         </>
       )}
