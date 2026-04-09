@@ -107,7 +107,7 @@ const LeadGate = ({ onComplete }: LeadGateProps) => {
       <div className="w-full max-w-md animate-fade-in">
         <div className="text-center mb-8">
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">
-            Myntmore Posting Rhythm Builder
+            Myntmore LinkedIn Profile Optimizer
           </h1>
           <p className="text-muted-foreground text-sm">
             Enter your details to get started
