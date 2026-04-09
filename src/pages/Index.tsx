@@ -211,7 +211,7 @@ const Index = () => {
   return (
     <main className="min-h-screen bg-background">
       <header className="absolute top-6 left-6 z-50 flex items-center justify-between w-[calc(100%-3rem)]">
-        <img src={myntmoreLogo} alt="Myntmore" className="w-32 md:w-40 h-auto" />
+        <img src={myntmoreLogo} alt="Myntmore" className="w-[120px] h-auto" />
         <a
           href="https://calendly.com/founder-myntmore/1-hour-meeting"
           target="_blank"

@@ -101,20 +101,20 @@ const LeadGate = ({ onComplete }: LeadGateProps) => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-background relative">
       <div className="absolute top-6 left-6">
-        <img src={myntmoreLogo} alt="Myntmore" className="w-32 md:w-40 h-auto" />
+        <img src={myntmoreLogo} alt="Myntmore" className="w-[120px] h-auto" />
       </div>
 
-      <div className="w-full max-w-md animate-fade-in">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl md:text-6xl font-extrabold tracking-tight mb-2 uppercase">
+      <div className="w-full max-w-4xl mx-auto animate-fade-in px-4">
+        <div className="text-center mb-8 max-w-3xl mx-auto">
+          <h1 className="text-2xl md:text-6xl font-extrabold tracking-tight mb-2 uppercase leading-tight">
             MYNTMORE <span className="text-[hsl(43,100%,64%)]">LINKEDIN</span> PROFILE OPTIMIZER
           </h1>
-          <p className="text-muted-foreground text-sm md:text-base">
+          <p className="text-muted-foreground text-sm md:text-base max-w-lg mx-auto">
             Audit your LinkedIn profile and gives you specific improvements to make it work harder for you
           </p>
         </div>
 
-        <div className="card-elevated p-8 glow-accent">
+        <div className="card-elevated p-8 glow-accent max-w-md mx-auto">
           <form onSubmit={handleSubmit} className="space-y-5">
             {fields.map(({ key, label, placeholder, type }) => (
               <div key={key} className="space-y-1.5">

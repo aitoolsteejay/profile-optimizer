@@ -11,7 +11,7 @@ const HeroSection = ({ onCtaClick }: HeroSectionProps) => {
       {/* Background subtle gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
       
-      <div className="max-w-4xl mx-auto relative z-10 animate-fade-in">
+      <div className="max-w-5xl mx-auto relative z-10 animate-fade-in">
         {/* Brand */}
         <p className="text-primary font-semibold text-sm tracking-widest uppercase mb-6">
           Myntmore LinkedIn Profile Optimizer
