@@ -76,7 +76,7 @@ const LeadGate = ({ onComplete }: LeadGateProps) => {
         return;
       }
 
-      onComplete(d);
+      onComplete(d as LeadData);
     } catch (err) {
       console.error("Failed to save lead:", err);
       setSubmitError("Something went wrong. Please try again.");
