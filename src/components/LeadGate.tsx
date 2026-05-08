@@ -147,7 +147,6 @@ const LeadGate = ({ onComplete }: LeadGateProps) => {
             </Button>
           </form>
         </div>
-      </div>
     </div>
   );
 };
