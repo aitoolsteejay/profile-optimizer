@@ -177,7 +177,7 @@ const StepOne = ({ data, onNext }: StepOneProps) => {
           </div>
         </div>
 
-        <Button type="submit" variant="hero" className="w-full mt-8">
+        <Button type="submit" variant="hero" className="w-full mt-8 rounded-full">
           Next <ArrowRight className="ml-2 h-5 w-5" />
         </Button>
       </form>

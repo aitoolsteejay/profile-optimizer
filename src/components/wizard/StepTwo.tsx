@@ -143,7 +143,7 @@ const StepTwo = ({ data, onSubmit, isSubmitting, error }: StepTwoProps) => {
         )}
 
         {/* Submit Button */}
-        <Button type="submit" variant="hero" className="w-full mt-8" disabled={isSubmitting}>
+        <Button type="submit" variant="hero" className="w-full mt-8 rounded-full" disabled={isSubmitting}>
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-5 w-5 animate-spin" />

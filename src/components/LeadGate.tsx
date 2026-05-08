@@ -99,20 +99,15 @@ const LeadGate = ({ onComplete }: LeadGateProps) => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-background relative">
-      <div className="absolute top-6 left-6">
-        <img src={myntmoreLogo} alt="Myntmore" className="w-[120px] h-auto" />
+    <div className="w-full max-w-4xl mx-auto animate-fade-in px-4 py-12">
+      <div className="text-center mb-8 max-w-3xl mx-auto">
+        <h2 className="text-2xl md:text-5xl font-extrabold tracking-tight mb-4 uppercase leading-tight">
+          MYNTMORE <span className="text-primary">LINKEDIN</span> PROFILE OPTIMIZER
+        </h2>
+        <p className="text-muted-foreground text-sm md:text-lg max-w-lg mx-auto">
+          Audit your LinkedIn profile and get specific improvements to make it work harder for you.
+        </p>
       </div>
-
-      <div className="w-full max-w-4xl mx-auto animate-fade-in px-4">
-        <div className="text-center mb-8 max-w-3xl mx-auto">
-          <h1 className="text-2xl md:text-6xl font-extrabold tracking-tight mb-2 uppercase leading-tight">
-            MYNTMORE <span className="text-[hsl(43,100%,64%)]">LINKEDIN</span> PROFILE OPTIMIZER
-          </h1>
-          <p className="text-muted-foreground text-sm md:text-base max-w-lg mx-auto">
-            Audit your LinkedIn profile and gives you specific improvements to make it work harder for you
-          </p>
-        </div>
 
         <div className="card-elevated p-8 glow-accent max-w-md mx-auto">
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -140,7 +135,7 @@ const LeadGate = ({ onComplete }: LeadGateProps) => {
               </div>
             )}
 
-            <Button type="submit" variant="hero" className="w-full mt-6" disabled={isSubmitting}>
+            <Button type="submit" variant="hero" className="w-full mt-6 rounded-full" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />

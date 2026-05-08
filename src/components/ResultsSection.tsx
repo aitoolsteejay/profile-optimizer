@@ -35,7 +35,7 @@ const ResultsSection = ({ results }: ResultsSectionProps) => {
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 70) return "text-green-400";
+    if (score >= 70) return "text-green-600";
     if (score >= 50) return "text-primary";
     return "text-destructive";
   };
@@ -298,7 +298,7 @@ const ResultsSection = ({ results }: ResultsSectionProps) => {
                 )}
               </Button>
             </div>
-            <div className="prose prose-invert max-w-none">
+            <div className="prose max-w-none">
               {results.aboutSection.split("\n\n").map((paragraph, index) => (
                 <p key={index} className="text-foreground/90 text-lg leading-relaxed mb-4 last:mb-0">
                   {paragraph}

@@ -118,14 +118,22 @@ const calculateKeywordScore = (
   return { score: Math.max(20, score), missingKeywords };
 };
 
+import LandingPage from "@/components/LandingPage";
+
 const Index = () => {
   const [leadData, setLeadData] = useState<LeadData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [results, setResults] = useState<any>(null);
+  const toolRef = useRef<HTMLDivElement>(null);
+
+  const scrollToTool = () => {
+    toolRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   const handleLeadComplete = (data: LeadData) => {
     setLeadData(data);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleWizardComplete = async (profileData: StepOneData) => {
@@ -202,46 +210,52 @@ const Index = () => {
     }
   };
 
-  // Show lead gate first
-  if (!leadData) {
-    return <LeadGate onComplete={handleLeadComplete} />;
-  }
-
-  // After lead capture, show the tool
   return (
-    <main className="min-h-screen bg-background">
-      <header className="absolute top-6 left-6 z-50 flex items-center justify-between w-[calc(100%-3rem)]">
-        <img src={myntmoreLogo} alt="Myntmore" className="w-[120px] h-auto" />
+    <main className="min-h-screen bg-background text-foreground overflow-x-hidden">
+      <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 bg-background/80 backdrop-blur-md border-b border-border/50">
+        <img src={myntmoreLogo} alt="Myntmore" className="w-[100px] md:w-[120px] h-auto" />
         <a
           href="https://calendly.com/founder-myntmore/1-hour-meeting"
           target="_blank"
           rel="noopener noreferrer"
         >
-          <Button variant="hero" size="sm" className="gap-2">
+          <Button variant="outline" size="sm" className="gap-2 rounded-full">
             <Calendar className="h-4 w-4" />
-            Book a Strategy Call
+            <span className="hidden md:inline">Book a Strategy Call</span>
+            <span className="md:hidden">Book Call</span>
           </Button>
         </a>
       </header>
 
-      {!showResults && !isLoading && (
-        <div className="pt-24">
-          <ProfileWizard onComplete={handleWizardComplete} isGenerating={isLoading} />
+      {!leadData && (
+        <div className="flex flex-col">
+          <LandingPage onStart={scrollToTool} />
+          <div ref={toolRef} className="min-h-screen flex items-center justify-center py-20 bg-white">
+            <div className="w-full">
+              <LeadGate onComplete={handleLeadComplete} />
+            </div>
+          </div>
         </div>
       )}
 
-      {isLoading && <LoadingState />}
+      {leadData && (
+        <div className="pt-24 min-h-screen">
+          {!showResults && !isLoading && (
+            <ProfileWizard onComplete={handleWizardComplete} isGenerating={isLoading} />
+          )}
 
-      {showResults && results && (
-        <>
-          <div className="pt-24">
-            <ResultsSection results={results} />
-          </div>
-          <CTASection />
-        </>
+          {isLoading && <LoadingState />}
+
+          {showResults && results && (
+            <>
+              <ResultsSection results={results} />
+              <CTASection />
+            </>
+          )}
+        </div>
       )}
 
-      <footer className="py-8 px-6 border-t border-border">
+      <footer className="py-12 px-6 border-t border-border bg-secondary/10">
         <div className="max-w-4xl mx-auto text-center text-muted-foreground text-sm">
           <p>© {new Date().getFullYear()} Myntmore LinkedIn Profile Optimizer. Built for professionals who want more inbound.</p>
         </div>
