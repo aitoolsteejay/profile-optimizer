@@ -215,7 +215,7 @@ const Index = () => {
       <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 bg-background/80 backdrop-blur-md border-b border-border/50">
         <img src={myntmoreLogo} alt="Myntmore" className="w-[100px] md:w-[120px] h-auto" />
         <a
-          href="https://calendly.com/founder-myntmore/1-hour-meeting"
+          href="https://www.myntmore.com/founder-meeting"
           target="_blank"
           rel="noopener noreferrer"
         >

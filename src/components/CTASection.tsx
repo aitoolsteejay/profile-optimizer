@@ -21,7 +21,7 @@ const CTASection = () => {
           variant="hero" 
           size="xl"
           className="mb-6"
-          onClick={() => window.open("https://calendly.com/founder-myntmore/30min?month=2025-12", "_blank")}
+          onClick={() => window.open("https://www.myntmore.com/founder-meeting", "_blank")}
         >
           Book a Strategy Call
           <ArrowRight className="ml-2 h-5 w-5" />
@@ -31,7 +31,7 @@ const CTASection = () => {
         <div>
           <button 
             className="inline-flex items-center text-muted-foreground hover:text-primary transition-colors text-sm font-medium group"
-            onClick={() => window.open("https://calendly.com/founder-myntmore/30min?month=2025-12", "_blank")}
+            onClick={() => window.open("https://www.myntmore.com/founder-meeting", "_blank")}
           >
             See how professional inbound pipeline works
             <ExternalLink className="ml-2 h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
