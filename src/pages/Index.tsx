@@ -7,7 +7,6 @@ import ResultsSection from "@/components/ResultsSection";
 import CTASection from "@/components/CTASection";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import myntmoreLogo from "@/assets/myntmore-logo.png";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "lucide-react";
 
@@ -212,8 +211,7 @@ const Index = () => {
 
   return (
     <main className="min-h-screen bg-background text-foreground overflow-x-hidden">
-      <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 bg-background/80 backdrop-blur-md border-b border-border/50">
-        <img src={myntmoreLogo} alt="Myntmore" className="w-[100px] md:w-[120px] h-auto" />
+      <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-end px-6 py-4 bg-background/80 backdrop-blur-md border-b border-border/50">
         <a
           href="https://www.myntmore.com/founder-meeting"
           target="_blank"
